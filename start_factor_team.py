@@ -24,8 +24,11 @@ for i in scienceon_id:
         a = list(scienceon_authorpapers.find({"A_ID":j},{"papers":1}))
        # print(a[0]["papers"])
         # 여기까지 authorpapers에서 논문 id들을 가져왔다.
-        for k in a:
+        for num, k in enumerate(a):
             #  print(k['papers'][0])
-            print(list(scienceon_rawdata.find({"_id":k['papers'][0]})))
-            
-#여기서 oid를 가져와야한다. 논문의 식별 번호이다.
+            x = list(scienceon_rawdata.find({"_id":k['papers'][0]},{"title":1,"abstract":1}))
+            print(num,x)
+# -------------------- 여기까지 scienceon에서 해당 저자의 title and abstract ---------------------------------
+
+
+
