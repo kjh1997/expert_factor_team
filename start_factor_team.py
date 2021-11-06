@@ -16,7 +16,7 @@ AuthorPapers_A_ID_AND_Papers = list(ntis_client['AuthorPapers'].find({'keyId':51
 scienceon_id = []
 scienceon_dict = {}
 ntis_data = []
-for A_ID_Data in AuthorPapers_A_ID_AND_Papers[0:20]:
+for A_ID_Data in AuthorPapers_A_ID_AND_Papers[0:60]:
     scienceon_author = []
     scienceon_data = []
     scienceon_data.append({"A_id": A_ID_Data['A_ID']})
@@ -30,7 +30,10 @@ for A_ID_Data in AuthorPapers_A_ID_AND_Papers[0:20]:
         scienceon_data.append(ntis_paper_data)
         ntis_paper_cnt += 1 
     #-----------------------------------------------------    
-    paper_cnt.append(ntis_paper_cnt) # 저자에 대한 ntis 논문 수
+    if ntis_paper_cnt >= 1:
+        paper_cnt.append(ntis_paper_cnt) # 저자에 대한 ntis 논문 수
+    else:
+        paper_cnt.append(0)
     # keyid 519로 검색했을 경우 나오는 a_id에 대한 scienceon의 id
     author = ID_Domestic.find({"ntis":A_ID_Data['A_ID']},{"scienceon":1,"ntis":1})
     for id in author:
@@ -47,15 +50,17 @@ for A_ID_Data in AuthorPapers_A_ID_AND_Papers[0:20]:
                 print(num,list(scienceon_rawdata.find({"_id":scienceon_paper_id['papers'][0]},{"title":1,"abstract":1,"english_title":1,"qryKeyword":1})))
                 scienceon_data.append(list(scienceon_rawdata.find({"_id":scienceon_paper_id['papers'][0]},{"title":1,"abstract":1,"english_title":1,"qryKeyword":1})))
                 scienceon_paper_cnt += 1
+                
             paper_cnt.append(scienceon_paper_cnt)  # 각 scienceon id 별 논문 수
     
     
     print(id['ntis'], "한사람 끝")
     scienceon_data.append({"Scienceon_id":scienceon_author})
     scienceon_data.append({"paper_cnt":paper_cnt})
+    scienceon_data.append({"ntis_paper_cnt":ntis_paper_cnt})
     scienceon_dict[id['ntis']] = scienceon_data
     pprint.pprint(scienceon_dict)
-    time.sleep(0.5)
+    time.sleep(2)
     
     
 print(scienceon_data)
