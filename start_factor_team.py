@@ -5,7 +5,7 @@ import time
 client = MongoClient('203.255.92.141:27017', connect=False)
 ID = client['ID']
 ID_Domestic = ID['Domestic']
-ntis_client  = client['NTIS']
+ntis_client  = client['KCI']
 ntis_rawdata = ntis_client['Rawdata']
 scienceon = client['SCIENCEON']
 scienceon_authorpapers = scienceon['AuthorPapers']
@@ -19,7 +19,7 @@ ntis_data = []
 for A_ID_Data in AuthorPapers_A_ID_AND_Papers[0:60]:
     scienceon_author = []
     scienceon_data = []
-    scienceon_data.append({"A_id": A_ID_Data['A_ID']})
+    #scienceon_data.append({"A_id": A_ID_Data['zA_ID']})
     ntis_paper_cnt = 0
     paper_cnt = []
     # keyid 519로 검색했을 경우의 논문
@@ -57,13 +57,13 @@ for A_ID_Data in AuthorPapers_A_ID_AND_Papers[0:60]:
     print(id['ntis'], "한사람 끝")
     scienceon_data.append({"Scienceon_id":scienceon_author})
     scienceon_data.append({"paper_cnt":paper_cnt})
-    scienceon_data.append({"ntis_paper_cnt":ntis_paper_cnt})
+    #scienceon_data.append({"ntis_paper_cnt":ntis_paper_cnt})
     scienceon_dict[id['ntis']] = scienceon_data
     pprint.pprint(scienceon_dict)
     time.sleep(2)
     
     
-print(scienceon_data)
+print(scienceon_dict)
 # -----------------------------------------------------------ntis 코드 ---------------------------------------------------------------
 
 
