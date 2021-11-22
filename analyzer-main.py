@@ -222,7 +222,7 @@ class Analysis(threading.Thread):
                 exp['Coop']     = coop[i] * contBit[i]
             exp['Quality']      = qual[i] * contBit[i]
             exp['Acc']          = accuracy[i]
-            exp['Numpaper']     = len(papers[i])
+            exp['Numpaper']     = len(papers)
             expf.append(exp)
         x = ExpertFactor.insert_many(expf)
 
