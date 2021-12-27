@@ -1,21 +1,4 @@
-
-mngIds = ['318595007279', '318595007279']
-A_ID   = '10062717'
-point  = []
-for i in range(len(mngIds)):
-    #print(i)
-    
-    pt = 0
-    temp = 0
-    for j in range(len(mngIds[i])):
-        if mngIds[i][j] != None:
-            if A_ID[i] == mngIds[i][j] :
-                print(A_ID,mngIds)
-                pt += 10
-            else:
-                temp += 1
-    if pt > 0 : 
-        pt += temp
-    print("pt",pt)
-    point.append(pt)
-print(point)
+_contBackdata = {'authors': [['s260004;s260003;s259870;s258361;s258056;s258057']], 'A_ID': ['s260004']}
+A_ID = _contBackdata['A_ID']
+aidToDict = {i : 0 for i in A_ID}
+print( aidToDict)

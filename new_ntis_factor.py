@@ -72,7 +72,7 @@ def storeExpertFactors(A_ID, rctt, crrt, durat, contrib, qual, qt, accuracy, coo
     exp['Acc']          = accuracy[0]
     exp['Numpaper']     = len(papers)
     expf.append(exp)
-    print("결과", expf)
+    #print("결과", expf)
     
 def recentness(pYears):
     dt = datetime.datetime.now()
@@ -235,7 +235,7 @@ def calAcc(keywords, query):
     qs = query[0].split()
     qs = [_qs for _qs in qs if len(_qs) >= 2]
     tfidf_vectorizer = TfidfVectorizer(analyzer='word', ngram_range=(1, 1))
-    tfidf_vectorizer.fit([query])
+    tfidf_vectorizer.fit(query)
 
     arr = tfidf_vectorizer.transform(flat_list).toarray()
     qrytfidf = [1] *len(qs)
@@ -252,16 +252,14 @@ def acc(keywords, contBit, querykeyword):
     defaultScore = 0.02
     rtv = contBit.copy()
     for i in range(len(keywords)):
-        try :
-            if rtv[i] != 0:
-                temp = calAcc(keywords[i],querykeyword)
-                if temp == 0.0 :
-                    rtv[i] = defaultScore
-                else :
-                    rtv[i] = temp
-        except Exception as e :
-            print(keywords[i])
-            print(e)
+        
+        if rtv[i] != 0:
+            temp = calAcc(keywords[i],querykeyword)
+            if temp == 0.0 :
+                rtv[i] = defaultScore
+            else :
+                rtv[i] = temp
+        
     return rtv
 
 for i in author_paper_data_dict: # 저자 한놈씩 나옴
@@ -274,7 +272,7 @@ for i in author_paper_data_dict: # 저자 한놈씩 나옴
     rctt     = recentness(pYears)
     crrt     = career(pYears)
     contrib  = cont(_contBackdata)
-    print(contrib)
+    #print(contrib)
     contBit  = [1 if j > 0 else j for j in contrib]
     qual     = _qtyBackdata
     durat    = durability(pYears)
@@ -283,7 +281,7 @@ for i in author_paper_data_dict: # 저자 한놈씩 나옴
     cop     = coop(_coopBackdata)
     accuracy = acc(keywords, contBit, qryKeyword)
     
-    #print("결과전", i, "career", crrt, "rctt",rctt, "contrib, con#tBit",contrib, contBit, "durat", durat, "qt", qt, "coop", cop, "accuracy",accuracy)
+    print(i, "career", crrt, "rctt",rctt, "contrib, con#tBit",contrib, contBit, "durat", durat, "qt", qt, "coop", cop, "accuracy",accuracy)
 
     #print(author_paper_data_dict[i][2]['ntis_data'])
     storeExpertFactors(i, rctt, crrt,  durat, contrib, qual, qt, accuracy, cop, contBit, author_paper_data_dict[i][2]['ntis_data'])

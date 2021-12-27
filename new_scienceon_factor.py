@@ -152,7 +152,7 @@ def cont( _contBackdata):
     authors = _contBackdata['authors']
     A_ID = _contBackdata['A_ID']
     aidToDict = {i : 0 for i in A_ID}
-
+  #  print(authors)
     for i in range(len(authors)):
         for j in  range(len(authors[i])) :
             x = authors[i][j].split(';')
@@ -316,7 +316,7 @@ for i in author_paper_data_dict: # 저자 한놈씩 나옴
     if not author_paper_data_dict[i][1]['scienceon_data']:
         continue
     #print(author_paper_data_dict[i][1]['scienceon_data'])
-    print(author_paper_data_dict[i][1]['scienceon_data'][0]['author_id'])
+   # print(author_paper_data_dict[i][1]['scienceon_data'][0]['author_id'])
     x = getRawBackdata(author_paper_data_dict[i][1]['scienceon_data'],i)
     
     
@@ -335,8 +335,8 @@ for i in author_paper_data_dict: # 저자 한놈씩 나옴
     cop     = coop(_coopBackdata)
     accuracy = acc(keywords, contBit)
     
-    #print(i, "career", crrt, "rctt",rctt, "contrib, con#tBit",contrib, contBit, "durat", durat, "qt", qt, "coop", cop, "accuracy",accuracy)
+    # print(i, "career", crrt, "rctt",rctt, "contrib, con#tBit",contrib, contBit, "durat", durat, "qt", qt, "coop", cop, "accuracy",accuracy)
     storeExpertFactors(i, rctt, crrt, durat, contrib, qual, qt, accuracy, cop, contBit, author_paper_data_dict[i][1]['scienceon_data'])
-    print("한명끝")
+   # print("한명끝")
    # print(author_paper_data_dict[i][2]['ntis_data'])
     #storeExpertFactors(i,rctt, crrt,  durat, contrib, qual, qt, accuracy, cop, contBit, author_paper_data_dict[i][2]['ntis_data'])
