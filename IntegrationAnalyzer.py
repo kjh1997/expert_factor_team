@@ -1,2 +1,0 @@
-class IntegrationAnalyzer(Threading.thread) :
-
