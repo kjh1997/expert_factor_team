@@ -1,4 +1,5 @@
 import re, math, time, threading, logging, datetime, sys, io, queue
+import pymongo
 from sklearn.feature_extraction.text import TfidfVectorizer
 from gensim.corpora import Dictionary
 from sklearn.pipeline import Pipeline
@@ -16,29 +17,59 @@ from numpy import dot
 import pandas as pd
 import numpy as np
 
-def __main__():
+'''
+A_ID : 저자 고유 ID
+keyID : 검색한 결과의 고유 id
+
+
+querykey : 웹에서 입력받은 검색 키워드
+cont : 기여도 // 삭제
+qty : 생산성 // 삭제
+durat : 연구지속성
+accuracy : 정확도   // 
+
+
+contbit : contrib 값에서 0을 제외한 값 
+durability : 연구지속성 // 삭제 /  durability(지속성) / crrt(경력) * contbit
+ ---------------------------------------------------------------------------------------------
+recentness : 최신성 /  recentness함수 //
+mean { f(과제 시작/ 종료 연도) } (3년 이내 가중치 ↑) +  mean { f(논문 출간 연도) } (3년 이내 가중치 ↑) 
+                              ↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+
+ f(mean{논문/과제 연도}) + norm((mean{논문/과제 연도} ± 𝑛년 이내 연구 성과 수(기여도 반영)))
+
+coop  : 협업도  // 변화 x 
+qual : 품질 // 다른함수 ,x
+acc : 정확성 // 키워드, contbit
+'''
+def run(i, dataPerPage, fid, keyID):
     a = factor_integration()
-    data = a.getBackdata(0,100, 0, 588)
+    #print("정상실행??", sys.argv)
+   # (i, dataPerPage, fid, keyID) = sys.argv[1],sys.argv[2], sys.argv[3], sys.argv[4]
+    data = a.getBackdata(i, dataPerPage, fid, keyID)
+    print(i)
+    #print("data", data)
     (pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata, qty, querykey) = a.getRawBackdata(data)
-    #print(pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata, qty, querykey)
+    #print(pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata)
+    #print(keywords)
     contrib = []
     qual = []
-    print(_ntisQtyBackdata[0])
+    
     for i in range(len(a.scoquality(_sconQtyBackdata))):
-        qual.append(a.ntiscont(_ntisContBackdata)[i]+a.scocont(_sconContBackdata)[i])
+        qual.append(a.ntisquality(_ntisQtyBackdata)[i]+a.scoquality(_sconQtyBackdata)[i])
     
     for i in range(len(a.scocont(_sconContBackdata))):
         contrib.append(a.ntiscont(_ntisContBackdata)[i]+a.scocont(_sconContBackdata)[i])
-    print(contrib)
+   # print(contrib)
 
 
     contBit  = [1 if i > 0 else i for i in contrib]
     accuracy = a.acc(keywords, contBit, querykey)
-    durat = a.durability(pYears)
-    print("qual", qual)
-    print("contBit", contBit)
-    print("accuracy", accuracy)
-    print("durat", durat)
+    
+    print("품질 : ", qual)
+    print("정확성 : ", accuracy)
+    print("협업도 : ", a.coop(_sconCoopBackdata))
+    print("생산성, 기여도, 최신성, 연구지속성 : ", a.recentness(pYears))
 
 
 class factor_integration:
@@ -61,15 +92,22 @@ class factor_integration:
 
     def getBackdata(self, i, dataPerPage, fid, keyID):
     #Domestic AuthorPapers
-        sCount  = i * dataPerPage
-        lCoount = dataPerPage
+        print("실행됐나?")
+        # print(i, dataPerPage, fid, keyID)
+        # print(type(int(i)))
+        # print(type(int(dataPerPage)))
+        # print(type(int(fid)))
+        # print(type(int(keyID)))
+        sCount  = int(i)
+        lCoount = int(dataPerPage)
         
         getBackdata = []
         
-        for doc in self.ID['Domestic'].find({"keyId":keyID, "fid":fid}, {"NTIS":1,"Scienceon":1}).skip(sCount).limit(lCoount):      
+        for doc in self.ID['Domestic'].find({"keyId":keyID, "fid":fid}).skip(i).limit(dataPerPage):      
+            #print(doc)
             papersNumber = 0
             getBackdataDic = {}
-            
+           # print("doc", doc)
             if ("NTIS" in doc):
                 getBackdataDic['ntis'] = doc['NTIS']['A_id']
                 getBackdataDic['ntis papers'] = doc['NTIS']['papers']
@@ -124,8 +162,8 @@ class factor_integration:
             #NTIS
             if (getBackdata[i]['ntis'] != None):
                 ntis_id.insert(0,getBackdata[i]['ntis'])
-                for doc in self.ntis_client['Rawdata'].find({"keyId": 588, "_id": {"$in" : getBackdata[i]['ntis papers']}}):
-                    fund_list.append(math.log(int(doc['totalFund'])+1))
+                for doc in self.ntis_client['Rawdata'].find({"keyId": 632, "_id": {"$in" : getBackdata[i]['ntis papers']}}):
+                    fund_list.append(math.log(float(doc['totalFund'])+1))
                     _mngIds.append(doc['mngId'])
                     for j in doc['qryKeyword']:
                         if j not in querykey:
@@ -154,7 +192,7 @@ class factor_integration:
                 
             #SCIENCEON
             if (getBackdata[i]['scienceon'] != None):
-                for doc in self.scienceon['Rawdata'].find({"keyId": 588, "_id": {"$in" : getBackdata[i]['Scienceon papers']}}):
+                for doc in self.scienceon['Rawdata'].find({"keyId": 632, "_id": {"$in" : getBackdata[i]['Scienceon papers']}}):
                     _keyword.append(doc['title'])
                     _keyword.append(doc['english_title'])
                     _keyword.append(doc['paper_keyword'])
@@ -193,7 +231,7 @@ class factor_integration:
                 
         return pYears, keywords, totalFunds, {'mngIds' : mngIds, 'A_ID' : ntis_id}, None, {'issueInsts' : issueInsts, 'issueLangs' : issueLangs, 'citation' : citation}, {'authors' : authors, 'A_ID' : scienceon_id  }, authorInsts, qty, querykey
     
-    def recentness(pYears):
+    def recentness(self, pYears):
         dt = datetime.datetime.now()
         rct_list = []
         for i in range(len(pYears)):
@@ -206,6 +244,7 @@ class factor_integration:
                 else:
                     rct += 0
             rct_list.append(rct / len(pYears[i]))
+            
         return rct_list
 
     def career(pYears):
@@ -217,38 +256,9 @@ class factor_integration:
             crr_list.append(crr)
         return crr_list
 
-    def durability(self, pYears):
-        maxLen = []
-        for i in range(len(pYears)):
-            pYears[i].sort(reverse=True)
-            packet = []
-            tmp = []
-            v = pYears[i].pop()
-            tmp.append(v)
-            while(len(pYears[i])>0):
-                vv = pYears[i].pop()
-                if v+1 == vv:
-                    tmp.append(vv)
-                    v = vv
-                elif v == vv:
-                    pass
-                else:
-                    packet.append(tmp)
-                    tmp = []
-                    tmp.append(vv)
-                    v = vv
-            packet.append(tmp)
-            maxLen.append(packet)
-
-        xx_list = []
-        for i in range(len(maxLen)):
-            x = []
-            for j in range(len(maxLen[i])):
-                x.append(len(maxLen[i][j]))
-            xx_list.append(max(x))
-        return xx_list
     
-    def coop(_coopBackdata):
+    
+    def coop(self, _coopBackdata):
         oemList = ["Hyundai", "Kia","Toyota","Honda","Nissan","General Motors", "Chevrolet","Ford motor", "Volkswagen", "Audi", "BMW", "Bayerische Motoren Werke", "Mercedes-Benz", "daimler", "Volvo", "Renault", "Jaguar", "Acura", "Mazda", "Subaru", "Suzuki", "Isuzu","Daihatsu","Peugeot","Mclaren", "Bugatti", "Rolls Royce", "Bentley", "Aston Martin", "Land Rover", "Lotus","Lexus",   "Infiniti", "Datson", "Mitsubishi", "Mitsuoka","Great Wall","Cadillac", "Tesla", "Jeep", "Dodge", "Chrysler","Porsche", "Opel", "Borgward", "Gumfut", "FIAT", "Ferrari", "Lamborghini", "Maserati","Peugeot"]
         score = []
         for i in range(len(_coopBackdata)):
@@ -322,7 +332,7 @@ class factor_integration:
                     n = 3
 
                 tempIF += math.log(((citation[i][j]*n)+1) * (tempIFIF+1.1))
-            IF.append(tempIF)
+            IF.append(tempIF*0.5)
         return IF
     
     def cos_sim(A, B):
@@ -358,8 +368,9 @@ def calAcc(keywords, querykey):
     qs = querykey #What is this ?
     qs = [_qs for _qs in qs if len(_qs) >= 2]
     tfidf_vectorizer = TfidfVectorizer(analyzer='word', ngram_range=(1, 1))
-    tfidf_vectorizer.fit(querykey)
 
+    tfidf_vectorizer.fit(querykey)
+    
     arr = tfidf_vectorizer.transform(flat_list).toarray()
     qrytfidf = [1] *len(qs)
     if sum(arr[np.argmax(arr.sum(axis=1))]) != 0:
@@ -372,4 +383,3 @@ def cos_sim(A, B):
 
     
 
-__main__()
