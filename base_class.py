@@ -16,6 +16,7 @@ from time import sleep
 from numpy import dot
 import pandas as pd
 import numpy as np
+from statistics import mean 
 
 '''
 A_ID : 저자 고유 ID
@@ -56,6 +57,7 @@ def run(i, dataPerPage, fid, keyID):
     qual = []
     
     for i in range(len(a.scoquality(_sconQtyBackdata))):
+        print(a.ntisquality(_ntisQtyBackdata)[i]+a.scoquality(_sconQtyBackdata)[i])
         qual.append(a.ntisquality(_ntisQtyBackdata)[i]+a.scoquality(_sconQtyBackdata)[i])
     
     for i in range(len(a.scocont(_sconContBackdata))):
@@ -162,7 +164,7 @@ class factor_integration:
             #NTIS
             if (getBackdata[i]['ntis'] != None):
                 ntis_id.insert(0,getBackdata[i]['ntis'])
-                for doc in self.ntis_client['Rawdata'].find({"keyId": 632, "_id": {"$in" : getBackdata[i]['ntis papers']}}):
+                for doc in self.ntis_client['Rawdata'].find({"keyId": 650, "_id": {"$in" : getBackdata[i]['ntis papers']}}):
                     fund_list.append(math.log(float(doc['totalFund'])+1))
                     _mngIds.append(doc['mngId'])
                     for j in doc['qryKeyword']:
@@ -192,7 +194,8 @@ class factor_integration:
                 
             #SCIENCEON
             if (getBackdata[i]['scienceon'] != None):
-                for doc in self.scienceon['Rawdata'].find({"keyId": 632, "_id": {"$in" : getBackdata[i]['Scienceon papers']}}):
+                scienceon_id.insert(0,getBackdata[i]['scienceon'])
+                for doc in self.scienceon['Rawdata'].find({"keyId": 650, "_id": {"$in" : getBackdata[i]['Scienceon papers']}}):
                     _keyword.append(doc['title'])
                     _keyword.append(doc['english_title'])
                     _keyword.append(doc['paper_keyword'])
@@ -205,8 +208,7 @@ class factor_integration:
                     _issueLangs.append(doc['issue_lang'])
                     _citation.append(int(doc['citation']))
                         
-                for k in range(len(getBackdata[i]['scienceon'])):
-                    scienceon_id.insert(0,getBackdata[i]['scienceon'][k])
+            
                         
                 if len(_keyword) != 0 :
                     authorInsts.insert(0,_authorInsts)
@@ -236,15 +238,24 @@ class factor_integration:
         rct_list = []
         for i in range(len(pYears)):
             rct = 0
+            print("here!!",sum(pYears[i]), len(pYears[i]))
+            try:
+                year_avg = sum(pYears[i]) / len(pYears[i])
+            except Exception as e:
+                rct_list.append(0)
+                continue
             for j in range(len(pYears[i])):
-                if pYears[i][j] >= int(dt.year)-2: # 최신년도 기준으로 과거 2년까지 +1점
-                    rct += 1
-                elif int(dt.year)-15 < pYears[i][j] <= int(dt.year)-3: # 최신년도 기준 과거 15년 ~ 과거 2년까지 
-                    rct += max(round((1-(int(dt.year)-3-pYears[i][j])*0.1),2), 0)
-                else:
-                    rct += 0
-            rct_list.append(rct / len(pYears[i]))
-            
+                if (year_avg - 5 < pYears[i][j] < year_avg + 5):
+                    if pYears[i][j] >= int(dt.year)-2: # 최신년도 기준으로 과거 2년까지 +1점
+                        rct += 1
+                    elif int(dt.year)-15 < pYears[i][j] <= int(dt.year)-3: # 최신년도 기준 과거 15년 ~ 과거 2년까지 
+                        rct += max(round((1-(int(dt.year)-3-pYears[i][j])*0.1),2), 0)
+                    else:
+                        rct += 0
+            if len(pYears[i]) != 0:
+                rct_list.append(rct / len(pYears[i]))
+            else:
+                rct_list.append(0)
         return rct_list
 
     def career(pYears):
@@ -342,9 +353,12 @@ class factor_integration:
     
     def acc(self, keywords, contBit, querykey):
         rtv = contBit.copy()
+        print(len(rtv), len(keywords))
         for i in range(len(keywords)):
             #try :
+          #  print('rtv',rtv[i])
             if rtv[i] != 0:
+               # print("keywords", keywords[i])
                 temp = calAcc(keywords[i], querykey)
                 if temp == 0.0 :
                     rtv[i] = 0.02 #Where is defaultScore
