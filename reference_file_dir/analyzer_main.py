@@ -329,78 +329,7 @@ class Analysis(threading.Thread):
                 print(e)
         return rtv
 
-    """ not used now  """
-    def workingThreading(self, q, a, qry_result,factorVars ) :
-        while not q.empty():
-            print("workwell")
-            try :
-                queueLock.acquire()
-                if not q.empty() :
-                    print("workwell2")
-                    i = q.get()
-                    queueLock.release()
-                    A_ID, papers = self.getBackdata(i, dataPerPage)
-                    (pYears, keywords, _qtyBackdata, _contBackdata, _coopBackdata) = self.getRawBackdata(papers, A_ID)
-
-                    if len(pYears) > 0 :
-                        contrib  = self.cont(_contBackdata)
-                        contBit  = [1 if i > 0 else i for i in contrib]
-                        rctt     = self.recentness(pYears)
-                        crrt     = self.career(pYears)
-                        durat    = self.durability(pYears)
-                        qt       = self.qty(papers)
-                        coop     = self.coop(_coopBackdata)
-                        qual     = self.quality(_qtyBackdata)
-                        accuracy = self.acc(qry_result, keywords, A_ID, contBit)
-
-                        tempQty  = max(qt)
-                        tempCont = max(contrib)
-                        tempQual = max(qual)
-
-                        if self.site != 'NTIS' :
-                            tempCoop = max(coop)
-
-                        for f in maxFactors :
-                            if maxFactors[f] < eval(factorVars[f]) :
-                                maxFactors[f] = eval(factorVars[f])
-
-                        exft = self.storeExpertFactors(A_ID, rctt, crrt, durat, contrib, qual, qt, accuracy, coop, contBit)
-                    progress = i/math.ceil(a/dataPerPage+1) * 100.0
-                    QueryKeyword.update({"_id":self.keyId},{'$set':{"progress":progress}})
-                sleep(0.1)
-            except Exception as e:
-                print(e)
-
-    """multi thread code"""
-    # threadList = ["t1", "t2"]
-    # threads = []
-    # workQueue = queue.Queue()
-    # queueLock.acquire()
-    # for i in range(math.ceil(All_count/dataPerPage)) :
-    # # for word in nameList:
-    #    workQueue.put(i)
-    # queueLock.release()
-    # for tname in threadList:
-    #     t = Thread(target=self.workingThreading, args=(workQueue, All_count, qry_result, factorVars))
-    #     t.start()
-    #     threads.append(t)
-    #
-    #
-    #
-    # # Wait for queue to empty
-    # while not workQueue.empty():
-    #     print(workQueue)
-    #     sleep(1)
-    #     pass
-    #
-    # # Notify threads it's time to exit
-    # exitFlag = 1
-    #
-    # # Wait for all threads to complete
-    # print("waiting join")
-    # for t in threads:
-    #    t.join()
-    # print ("Exiting Main Thread")
+    
 
 
     """ #2. 분석기 실행 """
@@ -454,6 +383,8 @@ class Analysis(threading.Thread):
                 exft = self.storeExpertFactors(A_ID, rctt, crrt, durat, contrib, qual, qt, accuracy, coop, contBit, papers)
             progress = (len(A_ID)/self.total) * 100.0
             QueryKeyword.find_one_and_update({"_id":self.keyId},{'$inc':{"progress":progress}})
+            # QueryKeyword에서 _id가 keyid 인 것을 찾아 progress만큼 증가시킨다.
+            # find_one_and_update > 업데이트 후 
 
         """ #5. 분석기 종료 """
         self.dt = datetime.datetime.now()
@@ -464,6 +395,7 @@ class Analysis(threading.Thread):
             maxFactors['Coop'] = 1
 
         ExpertFactorTable.update({"_id" : self.keyId}, {"$max" : maxFactors})
+        # keyid에 해당하는 기존값이 maxfactors보다 작으면 업데이트하고 maxfactor보다 크면 업데이트 하지 않는다. 
         print(maxFactors)
 
 

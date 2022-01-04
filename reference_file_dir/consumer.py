@@ -7,6 +7,7 @@ from pymongo.errors import BulkWriteError
 from multiprocessing import Process
 from pymongo import MongoClient
 from kafka import KafkaConsumer
+
 from json import loads
 
 

@@ -5,6 +5,8 @@ import os
 from pymongo import MongoClient
 from base_class import run 
 client =  MongoClient('203.255.92.141:27017', connect=False)
+PUBLIC = client['PUBLIC']
+new_max_factor =PUBLIC['new_factor'] 
 keyid = 650
 fid = 0
 ID = client['ID']
@@ -16,10 +18,13 @@ for i in DATA:
     b += 1
 print(b)  
 
-
+PUBLIC = client['PUBLIC']
+new_max_factor = PUBLIC['new_factor'] 
+print(type(new_max_factor.find_one({'keyId': keyid})))
 processList = []
+if None == new_max_factor.find_one({'keyId': keyid}):
+    new_max_factor.insert({'keyId': keyid},{'keyId': keyid, 'Quality' : -1, 'accuracy' : -1, 'recentness' : -1, 'coop': -1 })
 
-    
 
 if __name__ == '__main__':   
     for i in range(0,b , 100):
@@ -35,5 +40,4 @@ if __name__ == '__main__':
 for p in processList :
     p.join()
 
-# run(2200, 80, fid, keyid)
 

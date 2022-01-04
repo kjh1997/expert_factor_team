@@ -61,24 +61,31 @@ def run(i, dataPerPage, fid, keyID):
         contrib.append(a.ntiscont(_ntisContBackdata)[i]+a.scocont(_sconContBackdata)[i]+a.scocont(_KCIContBackdata)[i])
    # print(contrib)
     coop = []
+    scoop = a.coop(_sconCoopBackdata)
+    kcoop = a.coop(_KCICoopBackdata)
     for i in range(len(_sconCoopBackdata)):
-        coop.append(a.coop(_sconCoopBackdata)+a.coop(_KCICoopBackdata))
+        coop.append(scoop[i] + kcoop[i])
     contBit  = [1 if i > 0 else i for i in contrib]
     accuracy = a.acc(keywords, contBit, querykey)
-    
+    recentness = a.recentness(pYears)
     print("품질 : ", qual)
     print("정확성 : ", accuracy)
-    print("협업도 : ", a.coop(_sconCoopBackdata))
+    print("협업도 : ", coop)
     print("생산성, 기여도, 최신성, 연구지속성 : ", a.recentness(pYears))
+
+    a.insert_max_factor(qual, accuracy, coop, recentness,keyID)
+
 
 
 class factor_integration:
     def __init__(self):
         self.client = MongoClient('203.255.92.141:27017', connect=False)
         self.ID = self.client['ID']
+        self.PUBLIC = self.client['PUBLIC']
+        self.new_max_factor = self.PUBLIC['new_factor'] 
         self.ntis_client  = self.client['NTIS']
         self.scienceon = self.client['SCIENCEON']
-
+        self.keyId = ""
         self.KCI = self.client.PUBLIC.KCI
         self.SCI = self.client.PUBLIC.SCI
         self.kDic = {}
@@ -88,10 +95,30 @@ class factor_integration:
         for doc in self.SCI.find({}) :
             self.sDic[doc['name']] = doc['IF']
     
-    
+    def insert_max_factor(self, qual, accuracy, coop, pYears,keyID):
+        
+        qual = max(qual)
+        accuracy = max(accuracy)
+        coop = max(coop)
+        recentness = max(pYears)
+        keyId = keyID
+        maxFactors = {'keyId': self.keyId, 'Quality' : qual, 'accuracy' : accuracy, 'recentness' : recentness, 'coop': coop }
+        print(keyID)
+        print(qual, type(qual))
+        self.new_max_factor.update({"keyId" : keyId}, {'$max':{"Quality":qual}})
+        self.new_max_factor.update({"keyId" : keyId}, {'$max':{"accuracy":accuracy}})
+        self.new_max_factor.update({"keyId" : keyId}, {'$max':{"recentness":500.0}})
+        self.new_max_factor.update({"keyId" : keyId}, {'$max':{"coop":coop}})
+       
+        # try:
+        #     self.new_max_factor.update({"_id" : self.keyId}, {"$max" : 
+        # except Exception as e:   
+        #     self.new_max_factor.insert(maxFactors)
+        
+        
 
     def getBackdata(self, i, dataPerPage, fid, keyID):
-    
+        self.keyID = keyID
         print("RUN!!!",i)
         
         sCount  = int(i)
