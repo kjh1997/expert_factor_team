@@ -21,24 +21,18 @@ from statistics import mean
 '''
 A_ID : 저자 고유 ID
 keyID : 검색한 결과의 고유 id
-
-
 querykey : 웹에서 입력받은 검색 키워드
 cont : 기여도 // 삭제
 qty : 생산성 // 삭제
 durat : 연구지속성
 accuracy : 정확도   // 
-
-
 contbit : contrib 값에서 0을 제외한 값 
 durability : 연구지속성 // 삭제 /  durability(지속성) / crrt(경력) * contbit
  ---------------------------------------------------------------------------------------------
 recentness : 최신성 /  recentness함수 //
 mean { f(과제 시작/ 종료 연도) } (3년 이내 가중치 ↑) +  mean { f(논문 출간 연도) } (3년 이내 가중치 ↑) 
                               ↓↓↓↓↓↓↓↓↓↓↓↓↓↓
-
  f(mean{논문/과제 연도}) + norm((mean{논문/과제 연도} ± 𝑛년 이내 연구 성과 수(기여도 반영)))
-
 coop  : 협업도  // 변화 x 
 qual : 품질 // 다른함수 ,x
 acc : 정확성 // 키워드, contbit
@@ -47,10 +41,12 @@ def run(i, dataPerPage, fid, keyID):
     a = factor_integration()
     data = a.getBackdata(i, dataPerPage, fid, keyID)
     (pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata,_KCIconQtyBackdata, _KCIContBackdata, _KCICoopBackdata, qty, querykey) = a.getRawBackdata(data)
-    
+    # return pYears, keywords, totalFunds, {'mngIds' : mngIds, 'A_ID' : ntis_id}, None, {'issueInsts' : issueInsts1, 'issueLangs' : issueLangs1, 'citation' : citation1}, {'authors' : authors1, 'A_ID' : scienceon_id  }, authorInsts1, {'issueInsts' : issueInsts2, 'issueLangs' : issueLangs2, 'citation' : citation2}, {'authors' : authors2, 'A_ID' : KCI_id  }, authorInsts2, qty, querykey
+    #rint("len", len(_sconQtyBackdata))
     contrib = []
     qual = []
-    
+    print("len",len(_KCIconQtyBackdata['issueInsts']))
+    print("len",len(_sconQtyBackdata['issueInsts']))
     for i in range(len(a.scoquality(_sconQtyBackdata))):
         qual.append(a.ntisquality(_ntisQtyBackdata)[i]+a.scoquality(_sconQtyBackdata)[i]+a.scoquality(_KCIconQtyBackdata)[i])
 
@@ -85,6 +81,7 @@ class factor_integration:
         self.new_max_factor = self.PUBLIC['new_factor'] 
         self.ntis_client  = self.client['NTIS']
         self.scienceon = self.client['SCIENCEON']
+        self.KCI_main = self.client['KCI']
         self.keyId = ""
         self.KCI = self.client.PUBLIC.KCI
         self.SCI = self.client.PUBLIC.SCI
@@ -161,6 +158,7 @@ class factor_integration:
         return  getBackdata
         
     def getRawBackdata(self, getBackdata):
+
         pYears = [] #NTIS & SCIENCEON
         keywords = [] #NTIS & SCIENCEON
         qty = [] #NTIS & SCIENCEON
@@ -180,6 +178,7 @@ class factor_integration:
         citation2 = [] #KCI
         KCI_id = [] #KCI
         querykey = []
+        all_citation = []
         for i in range(len(getBackdata) - 1, -1, -1):
             _pYear = [] #NTIS & SCIENCEON & KCI
             _keywords = [] #NTIS & SCIENCEON & KCI
@@ -202,7 +201,7 @@ class factor_integration:
             _issueLangs2 = [] #KCI
             _citation2 = [] #KCI
             _KCI_id = [] #KCI
-            
+            _citation = []
             #NTIS
             if (getBackdata[i]['ntis'] != None):
                 ntis_id.insert(0,getBackdata[i]['ntis'])
@@ -248,7 +247,10 @@ class factor_integration:
                     _authors1.append(doc['author_id']) #= doc['author_id'].split(';')
                     _issueInsts1.append(doc['issue_inst'])
                     _issueLangs1.append(doc['issue_lang'])
+                  #  print("doc['issue_lang']", doc['issue_lang'], doc['issue_inst'], doc['issue_year'])
+
                     _citation1.append(int(doc['citation']))
+                    _citation.append(int(doc['citation']))
                         
             
                         
@@ -269,9 +271,9 @@ class factor_integration:
                 scienceon_id.insert(0,"sco"+str(i))
                 authorInsts1.insert(0,_authorInsts1)
             # KCI
-            if (getBackdata[i]['scienceon'] != None):
-                KCI_id.insert(0,getBackdata[i]['scienceon'])
-                for doc in self.scienceon['Rawdata'].find({"keyId": 650, "_id": {"$in" : getBackdata[i]['Scienceon papers']}}):
+            if (getBackdata[i]['KCI'] != None):
+                KCI_id.insert(0,getBackdata[i]['KCI'])
+                for doc in self.KCI_main['Rawdata'].find({"keyId": 650, "_id": {"$in" : getBackdata[i]['KCI papers']}}):
                     _keyword2.append(doc['title'])
                     _keyword2.append(doc['english_title'])
                     _keyword2.append(doc['paper_keyword'])
@@ -282,27 +284,30 @@ class factor_integration:
                     _authors2.append(doc['author_id']) #= doc['author_id'].split(';')
                     _issueInsts2.append(doc['issue_inst'])
                     _issueLangs2.append(doc['issue_lang'])
+                   # print("doc['issue_lang']" , doc['issue_lang'], doc['issue_inst'], doc['issue_year'])
                     _citation2.append(int(doc['citation']))
+                    _citation.append(int(doc['citation']))
                         
             
                         
-                if len(_keyword1) != 0 :
-                    authorInsts2.insert(0,_authorInsts1)
-                    authors2.insert(0, _authors1)
-                    issueInsts2.insert(0, _issueInsts1)
-                    _keywords.insert(0,_keyword1)
+                if len(_keyword2) != 0 :
+                    authorInsts2.insert(0,_authorInsts2)
+                    authors2.insert(0, _authors2)
+                    issueInsts2.insert(0, _issueInsts2)
+                    _keywords.insert(0,_keyword2)
                     #pYears.insert(0,_pYear)
-                    issueLangs2.insert(0,_issueLangs1)
+                    issueLangs2.insert(0,_issueLangs2)
                     #keywords.insert(0,_keywords)
-                    citation2.insert(0,_citation1)
+                    citation2.insert(0,_citation2)
             else:
-                issueInsts2.insert(0,_issueInsts1)
-                issueLangs2.insert(0,_issueLangs1)
-                citation2.insert(0,_citation1)
+
+                issueInsts2.insert(0,_issueInsts2)
+                issueLangs2.insert(0,_issueLangs2)
+                citation2.insert(0,_citation2)
                 authors2.insert(0,"kci"+str(i))
                 KCI_id.insert(0,"kci"+str(i))
-                authorInsts2.insert(0,_authorInsts1)
-                
+                authorInsts2.insert(0,_authorInsts2)
+           # print("issueLangs2", len(issueLangs2),print())
             pYears.insert(0,_pYear)
             keywords.insert(0, _keywords)
             qty.insert(0,getBackdata[i]['number'])
@@ -469,6 +474,3 @@ def calAcc(keywords, querykey):
 
 def cos_sim(A, B):
         return dot(A, B)/(norm(A)*norm(B))
-
-    
-
