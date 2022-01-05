@@ -7,12 +7,12 @@ from base_class import run
 client =  MongoClient('203.255.92.141:27017', connect=False)
 PUBLIC = client['PUBLIC']
 new_max_factor =PUBLIC['new_factor'] 
-keyid = 650
+keyid = 655
 fid = 0
 ID = client['ID']
-DATA = ID['Domestic'].find({"keyId":650, "fid":0})
+DATA = ID['Domestic'].find({"keyId":keyid, "fid":0})
 b = 0
-
+print("실행")
 for i in DATA:
     #print(i)
     b += 1

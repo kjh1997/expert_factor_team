@@ -40,15 +40,16 @@ acc : 정확성 // 키워드, contbit
 def run(i, dataPerPage, fid, keyID):
     a = factor_integration()
     data = a.getBackdata(i, dataPerPage, fid, keyID)
-    (pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata,_KCIconQtyBackdata, _KCIContBackdata, _KCICoopBackdata, qty, querykey) = a.getRawBackdata(data)
+    (pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata,_KCIconQtyBackdata, _KCIContBackdata, _KCICoopBackdata, qty, querykey) = a.getRawBackdata(data,keyID)
     # return pYears, keywords, totalFunds, {'mngIds' : mngIds, 'A_ID' : ntis_id}, None, {'issueInsts' : issueInsts1, 'issueLangs' : issueLangs1, 'citation' : citation1}, {'authors' : authors1, 'A_ID' : scienceon_id  }, authorInsts1, {'issueInsts' : issueInsts2, 'issueLangs' : issueLangs2, 'citation' : citation2}, {'authors' : authors2, 'A_ID' : KCI_id  }, authorInsts2, qty, querykey
     #rint("len", len(_sconQtyBackdata))
     contrib = []
     qual = []
     print("len",len(_KCIconQtyBackdata['issueInsts']))
     print("len",len(_sconQtyBackdata['issueInsts']))
-    for i in range(len(a.scoquality(_sconQtyBackdata))):
-        qual.append(a.ntisquality(_ntisQtyBackdata)[i]+a.scoquality(_sconQtyBackdata)[i]+a.scoquality(_KCIconQtyBackdata)[i])
+    print("len",len(_ntisQtyBackdata))
+    # for i in range(len(a.scoquality(_sconQtyBackdata))):
+    #     qual.append(a.ntisquality(_ntisQtyBackdata)[i]+a.scoquality(_sconQtyBackdata)[i]+a.scoquality(_KCIconQtyBackdata)[i])
 
    
 
@@ -67,7 +68,7 @@ def run(i, dataPerPage, fid, keyID):
     print("품질 : ", qual)
     print("정확성 : ", accuracy)
     print("협업도 : ", coop)
-    print("생산성, 기여도, 최신성, 연구지속성 : ", a.recentness(pYears))
+    print("생산성, 기여도, 최신성, 연구지속성 : ", recentness)
 
     a.insert_max_factor(qual, accuracy, coop, recentness,keyID)
 
@@ -157,7 +158,7 @@ class factor_integration:
            
         return  getBackdata
         
-    def getRawBackdata(self, getBackdata):
+    def getRawBackdata(self, getBackdata, keyID):
 
         pYears = [] #NTIS & SCIENCEON
         keywords = [] #NTIS & SCIENCEON
@@ -179,7 +180,9 @@ class factor_integration:
         KCI_id = [] #KCI
         querykey = []
         all_citation = []
+        cnt = 0
         for i in range(len(getBackdata) - 1, -1, -1):
+            cnt += 1
             _pYear = [] #NTIS & SCIENCEON & KCI
             _keywords = [] #NTIS & SCIENCEON & KCI
             
@@ -205,7 +208,7 @@ class factor_integration:
             #NTIS
             if (getBackdata[i]['ntis'] != None):
                 ntis_id.insert(0,getBackdata[i]['ntis'])
-                for doc in self.ntis_client['Rawdata'].find({"keyId": 650, "_id": {"$in" : getBackdata[i]['ntis papers']}}):
+                for doc in self.ntis_client['Rawdata'].find({"keyId": keyID, "_id": {"$in" : getBackdata[i]['ntis papers']}}):
                     fund_list.append(math.log(float(doc['totalFund'])+1))
                     _mngIds.append(doc['mngId'])
                     for j in doc['qryKeyword']:
@@ -236,7 +239,8 @@ class factor_integration:
             #SCIENCEON
             if (getBackdata[i]['scienceon'] != None):
                 scienceon_id.insert(0,getBackdata[i]['scienceon'])
-                for doc in self.scienceon['Rawdata'].find({"keyId": 650, "_id": {"$in" : getBackdata[i]['Scienceon papers']}}):
+                for doc in self.scienceon['Rawdata'].find({"keyId": keyID, "_id": {"$in" : getBackdata[i]['Scienceon papers']}}):
+                    print("!@31234124231")
                     _keyword1.append(doc['title'])
                     _keyword1.append(doc['english_title'])
                     _keyword1.append(doc['paper_keyword'])
@@ -272,8 +276,9 @@ class factor_integration:
                 authorInsts1.insert(0,_authorInsts1)
             # KCI
             if (getBackdata[i]['KCI'] != None):
+                
                 KCI_id.insert(0,getBackdata[i]['KCI'])
-                for doc in self.KCI_main['Rawdata'].find({"keyId": 650, "_id": {"$in" : getBackdata[i]['KCI papers']}}):
+                for doc in self.KCI_main['Rawdata'].find({"keyId": keyID, "_id": {"$in" : getBackdata[i]['KCI papers']}}):
                     _keyword2.append(doc['title'])
                     _keyword2.append(doc['english_title'])
                     _keyword2.append(doc['paper_keyword'])
@@ -300,14 +305,14 @@ class factor_integration:
                     #keywords.insert(0,_keywords)
                     citation2.insert(0,_citation2)
             else:
-
                 issueInsts2.insert(0,_issueInsts2)
                 issueLangs2.insert(0,_issueLangs2)
                 citation2.insert(0,_citation2)
                 authors2.insert(0,"kci"+str(i))
                 KCI_id.insert(0,"kci"+str(i))
                 authorInsts2.insert(0,_authorInsts2)
-           # print("issueLangs2", len(issueLangs2),print())
+
+  
             pYears.insert(0,_pYear)
             keywords.insert(0, _keywords)
             qty.insert(0,getBackdata[i]['number'])
