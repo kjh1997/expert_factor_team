@@ -1,12 +1,14 @@
-# from pymongo import MongoClient
+from pymongo import MongoClient
+from bson.objectid import ObjectId
 
 
-# client =  MongoClient('203.255.92.141:27017', connect=False)
-# public = client['PUBLIC']
-# new_factor = public['new_factor']
-# new_factor.update_one({"keyId":650},{"$push":{'insert1' : 12, 'insert2' : 123, 'insert3' : 1234, 'insert4': 634 }})
+client =  MongoClient('203.255.92.141:27017', connect=False)
+public = client['PUBLIC']
+ID = client['ID']
+Domestic = ID['Domestic']
+new_factor = public['new_factor']
 
-
+new_factor.update_one({'keyId':655},{"$set":{'test':{"test1":5}}})
 # # ID = client['ID']
 # # Domestic = ID['Domestic']
 # # data = Domestic.find({"keyId":650},{'_id':1})
@@ -17,9 +19,11 @@
 # # print(cnt)
 # FOR
 
+# y= Domestic.find({"keyId":655},{"_id":1})
 
 
-A = [1,2,3,4,5,6]
-for i in range(len(A)):
-    print(A[i])
-
+# for i in y:
+#     print(Domestic.find_one({"_id":ObjectId(i['_id'])}))
+# update_list = Domestic.find({"keyId":655},{'factor':1,"_id":1})
+# for doc in update_list:
+#     print(doc['factor']['qual'])
