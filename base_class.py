@@ -38,43 +38,45 @@ qual : 품질 // 다른함수 ,x
 acc : 정확성 // 키워드, contbit
 '''
 def run(i, dataPerPage, fid, keyID):
+    
     a = factor_integration()
+    print("dataPerPage1231", i, dataPerPage, fid, keyID)
     data, object_data = a.getBackdata(i, dataPerPage, fid, keyID)
     (pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata,_KCIconQtyBackdata, _KCIContBackdata, _KCICoopBackdata, qty, querykey) = a.getRawBackdata(data,keyID, object_data)
     # return pYears, keywords, totalFunds, {'mngIds' : mngIds, 'A_ID' : ntis_id}, None, {'issueInsts' : issueInsts1, 'issueLangs' : issueLangs1, 'citation' : citation1}, {'authors' : authors1, 'A_ID' : scienceon_id  }, authorInsts1, {'issueInsts' : issueInsts2, 'issueLangs' : issueLangs2, 'citation' : citation2}, {'authors' : authors2, 'A_ID' : KCI_id  }, authorInsts2, qty, querykey
     #rint("len", len(_sconQtyBackdata))
     contrib = []
-    print(object_data)
+    #print(object_data)
     qual = []
-    print("len",len(_KCIconQtyBackdata['issueInsts']))
-    print("len",len(_sconQtyBackdata['issueInsts']))
-    print("len",len(_ntisQtyBackdata))
-    for i in range(len(a.scoquality(_sconQtyBackdata))):
-        qual.append(a.ntisquality(_ntisQtyBackdata)[i]+a.scoquality(_sconQtyBackdata)[i]+a.scoquality(_KCIconQtyBackdata)[i])
+    #print("len",len(_KCIconQtyBackdata['issueInsts']))
+   # print("len",len(_sconQtyBackdata['issueInsts']))
+    #print("len",len(_ntisQtyBackdata))
+    for k in range(len(a.scoquality(_sconQtyBackdata))):
+        qual.append(a.ntisquality(_ntisQtyBackdata)[k]+a.scoquality(_sconQtyBackdata)[k]+a.scoquality(_KCIconQtyBackdata)[k])
 
    
 
-    for i in range(len(a.scocont(_sconContBackdata))):
-       
-        contrib.append(a.ntiscont(_ntisContBackdata)[i]+a.scocont(_sconContBackdata)[i]+a.scocont(_KCIContBackdata)[i])
+    for j in range(len(a.scocont(_sconContBackdata))):
+        contrib.append(a.ntiscont(_ntisContBackdata)[j]+a.scocont(_sconContBackdata)[j]+a.scocont(_KCIContBackdata)[j])
    # print(contrib)
     coop = []
     scoop = a.coop(_sconCoopBackdata)
     kcoop = a.coop(_KCICoopBackdata)
-    for i in range(len(_sconCoopBackdata)):
-        coop.append(scoop[i] + kcoop[i])
-    contBit  = [1 if i > 0 else i for i in contrib]
+    for x in range(len(_sconCoopBackdata)):
+        coop.append(scoop[x] + kcoop[x])
+    contBit  = [1 if y > 0 else y for y in contrib]
+    print("dataPerPage", i, dataPerPage, fid, keyID, querykey)
     accuracy = a.acc(keywords, contBit, querykey)
     recentness = a.recentness(pYears)
-    print("품질 : ", qual)
-    print("정확성 : ", accuracy)
-    print("협업도 : ", coop)
-    print("생산성, 기여도, 최신성, 연구지속성 : ", recentness)
-
+    # print("품질 : ", qual)
+    # print("정확성 : ", accuracy)
+    # print("협업도 : ", coop)
+    # print("생산성, 기여도, 최신성, 연구지속성 : ", recentness)
+    print("검사", i, qual)
     a.insert_max_factor(qual, accuracy, coop, recentness,keyID)
     for num, i in enumerate(object_data):
-        data = {'qual':qual[num],'accuracy':accuracy[num], 'coop':coop[num],'recentness':recentness[num]}
-        print(data, i)
+        data = {'qual':qual[num],'acc':accuracy[num], 'coop':coop[num],'recentness':recentness[num]}
+        #print(data, i)
         a.update_domestic(i,data)
 
 
@@ -220,8 +222,10 @@ class factor_integration:
                     fund_list.append(math.log(float(doc['totalFund'])+1))
                     _mngIds.append(doc['mngId'])
                     for j in doc['qryKeyword']:
+                      #  print("j",j)
                         if j not in querykey:
                             querykey.append(j)
+                         #   print("querykey1",querykey) 
                         
                     if doc['prdEnd'] != 'null':
                         _pYear.append(int(doc['prdEnd'][0:4]))
@@ -248,6 +252,11 @@ class factor_integration:
             if (getBackdata[i]['scienceon'] != None):
                 scienceon_id.append(getBackdata[i]['scienceon'])
                 for doc in self.scienceon['Rawdata'].find({"keyId": keyID, "_id": {"$in" : getBackdata[i]['Scienceon papers']}}):
+                    for j in doc['qryKeyword']:
+                       # print("sci",j)
+                        if j not in querykey:
+                            querykey.append(j)
+                          #  print("querykey1",querykey) 
                     _keyword1.append(doc['title'])
                     _keyword1.append(doc['english_title'])
                     _keyword1.append(doc['paper_keyword'])
@@ -285,6 +294,7 @@ class factor_integration:
                 
                 KCI_id.append(getBackdata[i]['KCI'])
                 for doc in self.KCI_main['Rawdata'].find({"keyId": keyID, "_id": {"$in" : getBackdata[i]['KCI papers']}}):
+                    
                     _keyword2.append(doc['title'])
                     _keyword2.append(doc['english_title'])
                     _keyword2.append(doc['paper_keyword'])
@@ -319,7 +329,7 @@ class factor_integration:
             pYears.append(_pYear)
             keywords.append( _keywords)
             qty.append(getBackdata[i]['number'])
-                
+        print("querykey3",querykey)    
         return pYears, keywords, totalFunds, {'mngIds' : mngIds, 'A_ID' : ntis_id}, None, {'issueInsts' : issueInsts1, 'issueLangs' : issueLangs1, 'citation' : citation1}, {'authors' : authors1, 'A_ID' : scienceon_id  }, authorInsts1, {'issueInsts' : issueInsts2, 'issueLangs' : issueLangs2, 'citation' : citation2}, {'authors' : authors2, 'A_ID' : KCI_id  }, authorInsts2, qty, querykey
     
     def recentness(self, pYears):
@@ -470,7 +480,7 @@ def calAcc(keywords, querykey):
     qs = querykey #What is this ?
     qs = [_qs for _qs in qs if len(_qs) >= 2]
     tfidf_vectorizer = TfidfVectorizer(analyzer='word', ngram_range=(1, 1))
-
+    #print("querykey", querykey)
     tfidf_vectorizer.fit(querykey)
     
     arr = tfidf_vectorizer.transform(flat_list).toarray()
