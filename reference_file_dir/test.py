@@ -36,7 +36,7 @@ class run_factor_integration:
     
 
     def run(self):
-        cnt = self.count_people()
+        cnt = 200
         processList = []
         if None == self.new_max_factor.find_one({'keyId': self.keyid}):
             self.new_max_factor.insert({'keyId': self.keyid},{'keyId': self.keyid, 'Quality' : -1, 'accuracy' : -1, 'recentness' : -1, 'coop': -1 })
@@ -49,10 +49,12 @@ class run_factor_integration:
                 start = i
                 end = cnt
             print(end)
-            proc = Process(target=run(start, end, self.fid, self.keyid))
-            processList.append(proc)
-            proc.start()
-        
+            if __name__ == '__main__':
+                proc = Process(target=run(start, end, self.fid, self.keyid))
+                processList.append(proc)
+                proc.start()
+        for p in processList :
+            p.join()
         
         self.factor_norm()
 
@@ -71,7 +73,7 @@ class run_factor_integration:
             else:
                 norm_qual = doc['factor']['qual']
 
-            self.Domestic.update({'_id':ObjectId(doc['_id'])},{"$set":{'factor':{"qual":norm_qual,'coop':doc['factor']['coop'],'recentness':doc['factor']['recentness'],'acc':doc['factor']['accuracy']}}})
+            self.Domestic.update({'_id':ObjectId(doc['_id'])},{"$set":{'factor':{"qual":norm_qual,'coop':doc['factor']['coop'],'recentness':doc['factor']['recentness'],'acc':doc['factor']['acc']}}})
         print("정규화 끝")
 
 __main__()
