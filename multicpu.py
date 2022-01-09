@@ -4,7 +4,7 @@ import multiprocessing
 import os
 from bson.objectid import ObjectId
 from pymongo import MongoClient
-from base_class import run
+from new_analyzer_made_by_kjh import run
 
 def __main__():
     keyid = 653
