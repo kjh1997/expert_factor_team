@@ -72,7 +72,7 @@ def run(i, dataPerPage, fid, keyID):
     # print("정확성 : ", accuracy)
     # print("협업도 : ", coop)
     # print("생산성, 기여도, 최신성, 연구지속성 : ", recentness)
-    print("검사", i, qual)
+   # print("검사", i, qual)
     a.insert_max_factor(qual, accuracy, coop, recentness,keyID)
     for num, i in enumerate(object_data):
         data = {'qual':qual[num],'acc':accuracy[num], 'coop':coop[num],'recentness':recentness[num]}
