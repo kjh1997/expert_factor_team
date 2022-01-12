@@ -1,5 +1,4 @@
 import re, math, time, threading, logging, datetime, sys, io, queue
-from typing import List
 import pymongo
 from sklearn.feature_extraction.text import TfidfVectorizer
 from gensim.corpora import Dictionary
@@ -43,40 +42,42 @@ def run(i, dataPerPage, fid, keyID):
     a = factor_integration()
     print("dataPerPage1231", i, dataPerPage, fid, keyID)
     data, object_data = a.getBackdata(i, dataPerPage, fid, keyID)
-    (pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata,_KCIconQtyBackdata, _KCIContBackdata, _KCICoopBackdata, qty, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list) = a.getRawBackdata(data,keyID, object_data)
-    
+    (pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata,_KCIconQtyBackdata, _KCIContBackdata, _KCICoopBackdata, qty, querykey) = a.getRawBackdata(data,keyID, object_data)
+    # return pYears, keywords, totalFunds, {'mngIds' : mngIds, 'A_ID' : ntis_id}, None, {'issueInsts' : issueInsts1, 'issueLangs' : issueLangs1, 'citation' : citation1}, {'authors' : authors1, 'A_ID' : scienceon_id  }, authorInsts1, {'issueInsts' : issueInsts2, 'issueLangs' : issueLangs2, 'citation' : citation2}, {'authors' : authors2, 'A_ID' : KCI_id  }, authorInsts2, qty, querykey
+    #rint("len", len(_sconQtyBackdata))
     contrib = []
+    #print(object_data)
     qual = []
-    
+    #print("len",len(_KCIconQtyBackdata['issueInsts']))
+   # print("len",len(_sconQtyBackdata['issueInsts']))
+    #print("len",len(_ntisQtyBackdata))
     for k in range(len(a.scoquality(_sconQtyBackdata))):
         qual.append(a.ntisquality(_ntisQtyBackdata)[k]+a.scoquality(_sconQtyBackdata)[k]+a.scoquality(_KCIconQtyBackdata)[k])
 
    
-    print("_sconContBackdata", _sconContBackdata, _ntisContBackdata, _KCIContBackdata)
 
     for j in range(len(a.scocont(_sconContBackdata))):
         contrib.append(a.ntiscont(_ntisContBackdata)[j]+a.scocont(_sconContBackdata)[j]+a.scocont(_KCIContBackdata)[j])
-        print("contrib", a.scocont(_sconContBackdata), a.scocont(_sconContBackdata), a.scocont(_KCIContBackdata))
-   
-   
+   # print(contrib)
     coop = []
     scoop = a.coop(_sconCoopBackdata)
     kcoop = a.coop(_KCICoopBackdata)
     for x in range(len(_sconCoopBackdata)):
         coop.append(scoop[x] + kcoop[x])
     contBit  = [1 if y > 0 else y for y in contrib]
-    print("contBit", contBit)
-    
+    print("dataPerPage", i, dataPerPage, fid, keyID, querykey)
     accuracy = a.acc(keywords, contBit, querykey)
-
     recentness = a.recentness(pYears)
-    NGBscore = [] 
-    (qual[i]*25 + accuracy[i]*25 + coop[i]*25 + recentness[i]*25)
-    a.insert_max_factor( qual, accuracy, coop, recentness,keyID)
+    # print("품질 : ", qual)
+    # print("정확성 : ", accuracy)
+    # print("협업도 : ", coop)
+    # print("생산성, 기여도, 최신성, 연구지속성 : ", recentness)
+   # print("검사", i, qual)
+    a.insert_max_factor(qual, accuracy, coop, recentness,keyID)
     for num, i in enumerate(object_data):
-        
         data = {'qual':qual[num],'acc':accuracy[num], 'coop':coop[num],'recentness':recentness[num]}
-        a.update_domestic(i,data, numProjects_list[num], numPapers_list[num], totalcitation_list[num], recentYear_list[num], totalcoop_list[num])
+        #print(data, i)
+        a.update_domestic(i,data)
 
 
 
@@ -101,19 +102,16 @@ class factor_integration:
             self.kDic[doc['name']] = doc['IF']
         for doc in self.SCI.find({}) :
             self.sDic[doc['name']] = doc['IF']
-    def update_domestic(self, id, data, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list):
-        self.ID['Domestic'].update_one({'_id':ObjectId(id)},{"$set":{"numProjects":numProjects_list,"numPapers":numPapers_list,"totalcitation":totalcitation_list ,"recentYear":recentYear_list, "totalcoop":totalcoop_list,'factor':data}})
+    def update_domestic(self, id, data):
+        self.ID['Domestic'].update_one({'_id':ObjectId(id)},{"$set":{'factor':data}})
 
     def insert_max_factor(self, qual, accuracy, coop, pYears,keyID):
         
         qual = max(qual)
         accuracy = max(accuracy)
         coop = max(coop)
-        print(pYears)
-        
         recentness = max(pYears)
         keyId = keyID
-        print(recentness)
         maxFactors = {'keyId': self.keyId, 'Quality' : qual, 'accuracy' : accuracy, 'recentness' : recentness, 'coop': coop }
      
         self.new_max_factor.update({"keyId" : keyId}, {'$max':{"Quality":qual}})
@@ -121,7 +119,12 @@ class factor_integration:
         self.new_max_factor.update({"keyId" : keyId}, {'$max':{"recentness":recentness}})
         self.new_max_factor.update({"keyId" : keyId}, {'$max':{"coop":coop}})
        
-       
+        # try:
+        #     self.new_max_factor.update({"_id" : self.keyId}, {"$max" : 
+        # except Exception as e:   
+        #     self.new_max_factor.append(xFactors)
+        
+        
 
     def getBackdata(self, i, dataPerPage, fid, keyID):
         self.keyID = keyID
@@ -135,7 +138,7 @@ class factor_integration:
         for doc in self.ID['Domestic'].find({"keyId":keyID, "fid":fid}).skip(i).limit(dataPerPage):      
             papersNumber = 0
             getBackdataDic = {}
-            objectid_data.insert(0,(doc['_id']))
+            objectid_data.append(doc['_id'])
             if ("NTIS" in doc):
                 getBackdataDic['ntis'] = doc['NTIS']['A_id']
                 getBackdataDic['ntis papers'] = doc['NTIS']['papers']
@@ -144,12 +147,10 @@ class factor_integration:
                 getBackdataDic['ntis'] = None
                 getBackdataDic['ntis papers'] = []
                         
-            if ("SCIENCEON" in doc):
-                
-                getBackdataDic['scienceon'] = doc['SCIENCEON']['A_id']
-                getBackdataDic['scienceon papers'] = doc['SCIENCEON']['papers']
-                papersNumber += len(doc['SCIENCEON']['papers'])
-                print(getBackdataDic)
+            if ("Scienceon" in doc):
+                getBackdataDic['scienceon'] = doc['Scienceon']['A_id']
+                getBackdataDic['Scienceon papers'] = doc['Scienceon']['papers']
+                papersNumber += len(doc['Scienceon']['papers'])
             else:
                 getBackdataDic['scienceon'] = None
                 getBackdataDic['scienceon papers'] = []
@@ -188,19 +189,10 @@ class factor_integration:
         citation2 = [] #KCI
         KCI_id = [] #KCI
         querykey = []
-        
-        totalcitation_list = []
-        recentYear_list = []
-        totalcoop_list = []
-        numPapers_list = []
-        numProjects_list = []
+        all_citation = []
+        cnt = 0
         for i in range(len(getBackdata) - 1, -1, -1):
-            totalcitation = 0
-            recentYear = []  
-            totalcoop = 0   #공동연구
-            numPapers = 0  # 논문수 > sci, kci
-            numProjects = 0 # 프로젝트 > ntis
-            
+            cnt += 1
             _pYear = [] #NTIS & SCIENCEON & KCI
             _keywords = [] #NTIS & SCIENCEON & KCI
             
@@ -225,11 +217,8 @@ class factor_integration:
             _citation = []
             #NTIS
             if (getBackdata[i]['ntis'] != None):
-                
                 ntis_id.append(getBackdata[i]['ntis'])
                 for doc in self.ntis_client['Rawdata'].find({"keyId": keyID, "_id": {"$in" : getBackdata[i]['ntis papers']}}):
-                    numProjects += 1
-                    
                     fund_list.append(math.log(float(doc['totalFund'])+1))
                     _mngIds.append(doc['mngId'])
                     for j in doc['qryKeyword']:
@@ -244,38 +233,25 @@ class factor_integration:
                         _pYear.append(int(doc['prdStart'][0:4]))
                     else:
                         _pYear.append(int(2000))
-                        
                     __keyword.append(doc['koTitle'])
                     __keyword.append(doc['enTitle'])
                     __keyword.append(doc['koKeyword'])
                     __keyword.append(doc['enKeyword'])
                 if len(__keyword) != 0 :
-                    _keywords.insert(0,__keyword)
-                    totalFunds.insert(0,sum(fund_list))
-                    mngIds.insert(0,_mngIds)
+                    _keywords.append( __keyword)
+                    totalFunds.append( sum(fund_list))
+                    mngIds.append( _mngIds)
                     #keywords.append( _keywords)
                     #pYears.append( _pYear)
             else:
-                ntis_id.insert(0,None)
-                totalFunds.insert(0,0)
-                mngIds.insert(0,_mngIds)
-            #sleep(1)
+                ntis_id.append(None)
+                totalFunds.append(0)
+                mngIds.append(_mngIds)
+                
             #SCIENCEON
             if (getBackdata[i]['scienceon'] != None):
-                
                 scienceon_id.append(getBackdata[i]['scienceon'])
-
-                for doc in self.scienceon['Rawdata'].find({"keyId": keyID, "_id": {"$in" : getBackdata[i]['scienceon papers']}}):
-                    #sleep(2)
-                    originalName = doc['originalName']
-                    originalName1 = originalName.split(';')
-                    pcnt = len(originalName1)
-                    cnt = 0
-                    for n in originalName1:
-                        if True == self.check_college(n):
-                            cnt +=1
-                    if cnt == pcnt:
-                        totalcoop += 1
+                for doc in self.scienceon['Rawdata'].find({"keyId": keyID, "_id": {"$in" : getBackdata[i]['Scienceon papers']}}):
                     for j in doc['qryKeyword']:
                        # print("sci",j)
                         if j not in querykey:
@@ -287,50 +263,37 @@ class factor_integration:
                     _keyword1.append(doc['abstract'])
                     _keyword1.append(doc['english_abstract'])
                     _pYear.append(int(doc['issue_year'][0:4]))
-                    recentYear.append(int(doc['issue_year'][0:4]))
                     _authorInsts1.append(doc['author_inst'])
                     _authors1.append(doc['author_id']) #= doc['author_id'].split(';')
                     _issueInsts1.append(doc['issue_inst'])
                     _issueLangs1.append(doc['issue_lang'])
 
                     _citation1.append(int(doc['citation']))
-                    totalcitation += int(doc['citation'])
-                    print("_citation1",_citation1)
-                    numPapers += 1
+                    _citation.append(int(doc['citation']))
                         
             
                         
                 if len(_keyword1) != 0 :
-                    authorInsts1.insert(0,_authorInsts1)
-                    authors1.insert(0,_authors1)
-                    issueInsts1.insert(0, _issueInsts1)
-                    _keywords.insert(0,_keyword1)
+                    authorInsts1.append(_authorInsts1)
+                    authors1.append( _authors1)
+                    issueInsts1.append( _issueInsts1)
+                    _keywords.append(_keyword1)
                     #pYears.append(_pYear)
-                    issueLangs1.insert(0,_issueLangs1)
+                    issueLangs1.append(_issueLangs1)
                     #keywords.append(_keywords)
-                    citation1.insert(0,_citation1)
+                    citation1.append(_citation1)
             else:
-                issueInsts1.insert(0,_issueInsts1)
-                issueLangs1.insert(0,_issueLangs1)
-                citation1.insert(0,_citation1)
-                authors1.insert(0,"scienceon"+str(i))
-                scienceon_id.insert(0,"sco"+str(i))
-                authorInsts1.insert(0,_authorInsts1)
+                issueInsts1.append(_issueInsts1)
+                issueLangs1.append(_issueLangs1)
+                citation1.append(_citation1)
+                authors1.append("scienceon"+str(i))
+                scienceon_id.append("sco"+str(i))
+                authorInsts1.append(_authorInsts1)
             # KCI
             if (getBackdata[i]['KCI'] != None):
                 
                 KCI_id.append(getBackdata[i]['KCI'])
                 for doc in self.KCI_main['Rawdata'].find({"keyId": keyID, "_id": {"$in" : getBackdata[i]['KCI papers']}}):
-                    numPapers += 1
-                    originalName = doc['originalName']
-                    originalName2 = originalName.split(';')
-                    pcnt = len(originalName2)
-                    cnt = 0
-                    for m in originalName2:
-                        if True == self.check_college(m):
-                            cnt +=1
-                    if cnt == pcnt:
-                        totalcoop += 1
                     
                     _keyword2.append(doc['title'])
                     _keyword2.append(doc['english_title'])
@@ -338,54 +301,36 @@ class factor_integration:
                     _keyword2.append(doc['abstract'])
                     _keyword2.append(doc['english_abstract'])
                     _pYear.append(int(doc['issue_year'][0:4]))
-                    recentYear.append(int(doc['issue_year'][0:4]))
                     _authorInsts2.append(doc['author_inst'])
                     _authors2.append(doc['author_id']) #= doc['author_id'].split(';')
                     _issueInsts2.append(doc['issue_inst'])
                     _issueLangs2.append(doc['issue_lang'])
                     _citation2.append(int(doc['citation']))
-                    totalcitation += int(doc['citation'])
-                    print("_citation2",_citation2)
+                    _citation.append(int(doc['citation']))
+                        
             
                         
                 if len(_keyword2) != 0 :
-                    authorInsts2.insert(0,_authorInsts2)
-                    authors2.insert(0,_authors2)
-                    issueInsts2.insert(0, _issueInsts2)
-                    _keywords.insert(0,_keyword2)
-                    issueLangs2.insert(0,_issueLangs2)
-                    citation2.insert(0,_citation2)
-                
+                    authorInsts2.append(_authorInsts2)
+                    authors2.append(_authors2)
+                    issueInsts2.append( _issueInsts2)
+                    _keywords.append(_keyword2)
+                    issueLangs2.append(_issueLangs2)
+                    citation2.append(_citation2)
             else:
-                issueInsts2.insert(0,_issueInsts2)
-                issueLangs2.insert(0,_issueLangs2)
-                citation2.insert(0,_citation2)
-                authors2.insert(0,"kci"+str(i))
-                KCI_id.insert(0,"kci"+str(i))
-                authorInsts2.insert(0,_authorInsts2)
-            
-            totalcoop_list.append(totalcoop) #1
-            
-            
-            if recentYear == []:
-                recentYear_list.append(0)
-            else:
-                recentYear_list.append(max(recentYear)) #2
-            totalcitation_list.append(totalcitation) #3
-            numPapers_list.append(numPapers) #4
-            numProjects_list.append(numProjects) #5
+                issueInsts2.append(_issueInsts2)
+                issueLangs2.append(_issueLangs2)
+                citation2.append(_citation2)
+                authors2.append("kci"+str(i))
+                KCI_id.append("kci"+str(i))
+                authorInsts2.append(_authorInsts2)
+
+  
             pYears.append(_pYear)
-            keywords.append(_keywords)
-            print("totalcoop", totalcoop)
-            print("numProjects_list, numPapers_list, totalcitation_list, recentYear", numProjects, totalcitation, recentYear)
-            try:
-                print(getBackdata[i]['number'])
-                qty.append(getBackdata[i]['number'])
-            except Exception as e:
-                print(getBackdata)
-            
-        print("querykey3",querykey, len(authors2),len(KCI_id) )   
-        return pYears, keywords, totalFunds, {'mngIds' : mngIds, 'A_ID' : ntis_id}, None, {'issueInsts' : issueInsts1, 'issueLangs' : issueLangs1, 'citation' : citation1}, {'authors' : authors1, 'A_ID' : scienceon_id  }, authorInsts1, {'issueInsts' : issueInsts2, 'issueLangs' : issueLangs2, 'citation' : citation2}, {'authors' : authors2, 'A_ID' : KCI_id  }, authorInsts2, qty, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list
+            keywords.append( _keywords)
+            qty.append(getBackdata[i]['number'])
+        print("querykey3",querykey)    
+        return pYears, keywords, totalFunds, {'mngIds' : mngIds, 'A_ID' : ntis_id}, None, {'issueInsts' : issueInsts1, 'issueLangs' : issueLangs1, 'citation' : citation1}, {'authors' : authors1, 'A_ID' : scienceon_id  }, authorInsts1, {'issueInsts' : issueInsts2, 'issueLangs' : issueLangs2, 'citation' : citation2}, {'authors' : authors2, 'A_ID' : KCI_id  }, authorInsts2, qty, querykey
     
     def recentness(self, pYears):
         dt = datetime.datetime.now()
@@ -439,14 +384,13 @@ class factor_integration:
     def ntiscont(self, _contBackdata):
         mngIds = _contBackdata['mngIds']
         A_ID   = _contBackdata['A_ID']
-
         point  = []
         for i in range(len(mngIds)):
             pt = 0
             temp = 0
-            for k in range(len(mngIds[i])):
-                if mngIds[i][k] != None:
-                    if A_ID[i] == mngIds[i][k] :
+            for j in range(len(mngIds[i])):
+                if mngIds[i][j] != None:
+                    if A_ID[i] == mngIds[i][j] :
                         pt += 10
                     else:
                         temp += 1
@@ -458,20 +402,11 @@ class factor_integration:
     def scocont(self, _contBackdata):
         authors = _contBackdata['authors']
         A_ID = _contBackdata['A_ID']
-        aidToDict = {}
-    
-        cnt = 0 
-        for i in A_ID:
-            #print(i)
-            if type(i) == list:
-                i = i[0]
-         
-            aidToDict[i] = 0
-            cnt += 1
-     
+        aidToDict = {i : 0 for i in A_ID}
+
         for i in range(len(authors)):
-            for u in range(len(authors[i])):
-                x = authors[i][u].split(';')
+            for j in  range(len(authors[i])) :
+                x = authors[i][j].split(';')
                 for author in enumerate(x):
                     if author[1] in aidToDict and author[1] == A_ID[i]:
                         if author[0] == 0:
@@ -518,15 +453,13 @@ class factor_integration:
         rtv = contBit.copy()
         print(len(rtv), len(keywords))
         for i in range(len(keywords)):
-           # print(rtv, i)
             #try :
           #  print('rtv',rtv[i])
             if rtv[i] != 0:
                # print("keywords", keywords[i])
                 temp = calAcc(keywords[i], querykey)
-                print("temp", temp)
                 if temp == 0.0 :
-                    rtv[i] = 0.02 
+                    rtv[i] = 0.02 #Where is defaultScore
                 else :
                     rtv[i] = temp
             """
@@ -535,62 +468,6 @@ class factor_integration:
                 print(e)
             """
         return rtv
-
-
-    def isEnglishOrKorean(self,input_s):
-        k_count = 0
-        e_count = 0
-        for c in input_s:
-            if ord('가') <= ord(c) <= ord('힣'):
-                k_count+=1
-            elif ord('a') <= ord(c.lower()) <= ord('z'):
-                e_count+=1
-        return "k" if k_count>1 else "e"
-
-    def check_college(self, univ0):
-        branch_set = ['성균관대학교', '건국대학교', '한양대학교']
-        univName = self.client['PUBLIC']['CollegeName']
-        univ1 = re.sub("산학협력단|병원","",str(univ0))
-        univ2 = re.sub("대학교","대학교 ",str(univ1))
-
-        try:
-            if self.isEnglishOrKorean(str(univ0)) == 'e':
-                univ0 = univ0.upper()
-                univ0 = univ0.replace('.', ',')
-                univ = univ0.split(', ')
-            else:
-                univ = univ2.replace(",", "").split()
-                univ = list(set(univ))   
-                
-            for uni in univ:
-                if uni in branch_set:
-                    if ("ERICA" or "에리카") in univ0:
-                        univ[univ.index("한양대학교")] = "한양대학교(ERICA캠퍼스)"
-                    elif ("글로컬" or "GLOCAL") in univ0:
-                        univ[univ.index("건국대학교")] = "건국대학교 GLOCAL(글로컬)캠퍼스"
-                    elif "자연과학캠퍼스" in univ0:
-                        univ[univ.index("성균관대학교")] = "성균관대학교(자연과학캠퍼스)"
-
-            univs = '{"$or": ['
-            for u in range(len(univ)):
-                if univ[-1] == univ[u]:
-                    univs += '{"inputName": "' + univ[u] + '"}'
-                else:
-                    univs += '{"inputName": "' + univ[u] + '"}, '
-            univs += ']}'
-
-            univ_query = univName.find_one(eval(univs))
-
-            if univ_query is None:
-                print("Search inst None")
-                return False
-            else:
-                return True #univ0, univ_query
-            
-        except SyntaxError as e:
-            print(e)
-            print(univ0)
-            return False
 def calAcc(keywords, querykey):
     flat_list = []
     for sublist in keywords :
@@ -615,5 +492,3 @@ def calAcc(keywords, querykey):
 
 def cos_sim(A, B):
         return dot(A, B)/(norm(A)*norm(B))
-
-

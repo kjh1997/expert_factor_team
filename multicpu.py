@@ -7,7 +7,7 @@ from pymongo import MongoClient
 from new_analyzer_made_by_kjh import run
 
 def __main__():
-    keyid = 653
+    keyid = 674
     fid = 0
     analyzer = run_factor_integration(keyid, fid)
     
@@ -28,6 +28,7 @@ class run_factor_integration:
 
     def count_people(self):
         cnt = 0
+        print(cnt)
         print("실행")
         for i in self.DATA:
             #print(i)
@@ -36,7 +37,9 @@ class run_factor_integration:
     
 
     def run(self):
-        cnt = 200
+     
+        print("count_people", self.count_people)
+        cnt = self.count_people()
         processList = []
         if None == self.new_max_factor.find_one({'keyId': self.keyid}):
             self.new_max_factor.insert({'keyId': self.keyid},{'keyId': self.keyid, 'Quality' : -1, 'accuracy' : -1, 'recentness' : -1, 'coop': -1 })
@@ -63,17 +66,17 @@ class run_factor_integration:
         max_factor = self.new_max_factor.find_one({'keyId':self.keyid})
 
         max_qual = max_factor['Quality']
-        # max_acc = max_factor['accuracy']
-        # max_recentness = max_factor['recentness']
-        # max_coop = max_factor['coop']
-        update_list = self.Domestic.find({"keyId":self.keyid},{'factor':1,"_id":1})
+        max_acc = max_factor['accuracy']
+        max_recentness = max_factor['recentness']
+        max_coop = max_factor['coop']
+        update_list = self.Domestic.find({"keyId":self.keyid})
         for doc in update_list:
             if max_qual != 0:
                 norm_qual = doc['factor']['qual']/max_qual
             else:
                 norm_qual = doc['factor']['qual']
-
-            self.Domestic.update({'_id':ObjectId(doc['_id'])},{"$set":{'factor':{"qual":norm_qual,'coop':doc['factor']['coop'],'recentness':doc['factor']['recentness'],'acc':doc['factor']['acc']}}})
+            score = doc['factor']['qual'] * 25 + doc['factor']['acc'] *25 + doc['factor']['recentness'] * 25 +  doc['factor']['coop'] * 25
+            self.Domestic.update({'_id':ObjectId(doc['_id'])},{"$set":{'score':score ,'factor':{"qual":norm_qual,'coop':doc['factor']['coop'],'recentness':doc['factor']['recentness'],'acc':doc['factor']['acc']}}})
         print("정규화 끝")
 
 __main__()
