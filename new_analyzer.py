@@ -52,12 +52,11 @@ def run(i, dataPerPage, fid, keyID):
         qual.append(a.ntisquality(_ntisQtyBackdata)[k]+a.scoquality(_sconQtyBackdata)[k]+a.scoquality(_KCIconQtyBackdata)[k])
 
    
-    print("_sconContBackdata", _sconContBackdata, _ntisContBackdata, _KCIContBackdata)
 
     for j in range(len(a.scocont(_sconContBackdata))):
         contrib.append(a.ntiscont(_ntisContBackdata)[j]+a.scocont(_sconContBackdata)[j]+a.scocont(_KCIContBackdata)[j])
-        print("contrib", a.scocont(_sconContBackdata), a.scocont(_sconContBackdata), a.scocont(_KCIContBackdata))
-   
+    print(contrib)
+   # sleep(3)
    
     coop = []
     scoop = a.coop(_sconCoopBackdata)
@@ -65,14 +64,17 @@ def run(i, dataPerPage, fid, keyID):
     for x in range(len(_sconCoopBackdata)):
         coop.append(scoop[x] + kcoop[x])
     contBit  = [1 if y > 0 else y for y in contrib]
-    print("contBit", contBit)
-    
+    print(contrib)
+    sleep(3)
     accuracy = a.acc(keywords, contBit, querykey)
-
+   # print(len(object_data))
+    #print(object_data)
+   # sleep(10)
     recentness = a.recentness(pYears)
-    NGBscore = [] 
-    (qual[i]*25 + accuracy[i]*25 + coop[i]*25 + recentness[i]*25)
+    
+    # (qual[i]*25 + accuracy[i]*25 + coop[i]*25 + recentness[i]*25)
     a.insert_max_factor( qual, accuracy, coop, recentness,keyID)
+   # print(len(qual), len(accuracy), len(coop), len(recentness))
     for num, i in enumerate(object_data):
         
         data = {'qual':qual[num],'acc':accuracy[num], 'coop':coop[num],'recentness':recentness[num]}
@@ -101,19 +103,18 @@ class factor_integration:
             self.kDic[doc['name']] = doc['IF']
         for doc in self.SCI.find({}) :
             self.sDic[doc['name']] = doc['IF']
+
+
     def update_domestic(self, id, data, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list):
+       # print(id,"실행?!@?#!@#?!@#!@#!@#")
         self.ID['Domestic'].update_one({'_id':ObjectId(id)},{"$set":{"numProjects":numProjects_list,"numPapers":numPapers_list,"totalcitation":totalcitation_list ,"recentYear":recentYear_list, "totalcoop":totalcoop_list,'factor':data}})
 
     def insert_max_factor(self, qual, accuracy, coop, pYears,keyID):
-        
         qual = max(qual)
         accuracy = max(accuracy)
-        coop = max(coop)
-        print(pYears)
-        
+        coop = max(coop)        
         recentness = max(pYears)
         keyId = keyID
-        print(recentness)
         maxFactors = {'keyId': self.keyId, 'Quality' : qual, 'accuracy' : accuracy, 'recentness' : recentness, 'coop': coop }
      
         self.new_max_factor.update({"keyId" : keyId}, {'$max':{"Quality":qual}})
@@ -149,7 +150,6 @@ class factor_integration:
                 getBackdataDic['scienceon'] = doc['SCIENCEON']['A_id']
                 getBackdataDic['scienceon papers'] = doc['SCIENCEON']['papers']
                 papersNumber += len(doc['SCIENCEON']['papers'])
-                print(getBackdataDic)
             else:
                 getBackdataDic['scienceon'] = None
                 getBackdataDic['scienceon papers'] = []
@@ -226,7 +226,7 @@ class factor_integration:
             #NTIS
             if (getBackdata[i]['ntis'] != None):
                 
-                ntis_id.append(getBackdata[i]['ntis'])
+                ntis_id.insert(0,getBackdata[i]['ntis'])
                 for doc in self.ntis_client['Rawdata'].find({"keyId": keyID, "_id": {"$in" : getBackdata[i]['ntis papers']}}):
                     numProjects += 1
                     
@@ -263,7 +263,7 @@ class factor_integration:
             #SCIENCEON
             if (getBackdata[i]['scienceon'] != None):
                 
-                scienceon_id.append(getBackdata[i]['scienceon'])
+                scienceon_id.insert(0,getBackdata[i]['scienceon'])
 
                 for doc in self.scienceon['Rawdata'].find({"keyId": keyID, "_id": {"$in" : getBackdata[i]['scienceon papers']}}):
                     #sleep(2)
@@ -295,7 +295,6 @@ class factor_integration:
 
                     _citation1.append(int(doc['citation']))
                     totalcitation += int(doc['citation'])
-                    print("_citation1",_citation1)
                     numPapers += 1
                         
             
@@ -319,7 +318,7 @@ class factor_integration:
             # KCI
             if (getBackdata[i]['KCI'] != None):
                 
-                KCI_id.append(getBackdata[i]['KCI'])
+                KCI_id.insert(0,getBackdata[i]['KCI'])
                 for doc in self.KCI_main['Rawdata'].find({"keyId": keyID, "_id": {"$in" : getBackdata[i]['KCI papers']}}):
                     numPapers += 1
                     originalName = doc['originalName']
@@ -345,7 +344,6 @@ class factor_integration:
                     _issueLangs2.append(doc['issue_lang'])
                     _citation2.append(int(doc['citation']))
                     totalcitation += int(doc['citation'])
-                    print("_citation2",_citation2)
             
                         
                 if len(_keyword2) != 0 :
@@ -376,15 +374,12 @@ class factor_integration:
             numProjects_list.append(numProjects) #5
             pYears.append(_pYear)
             keywords.append(_keywords)
-            print("totalcoop", totalcoop)
-            print("numProjects_list, numPapers_list, totalcitation_list, recentYear", numProjects, totalcitation, recentYear)
             try:
-                print(getBackdata[i]['number'])
+             #   print(getBackdata[i]['number'])
                 qty.append(getBackdata[i]['number'])
             except Exception as e:
                 print(getBackdata)
             
-        print("querykey3",querykey, len(authors2),len(KCI_id) )   
         return pYears, keywords, totalFunds, {'mngIds' : mngIds, 'A_ID' : ntis_id}, None, {'issueInsts' : issueInsts1, 'issueLangs' : issueLangs1, 'citation' : citation1}, {'authors' : authors1, 'A_ID' : scienceon_id  }, authorInsts1, {'issueInsts' : issueInsts2, 'issueLangs' : issueLangs2, 'citation' : citation2}, {'authors' : authors2, 'A_ID' : KCI_id  }, authorInsts2, qty, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list
     
     def recentness(self, pYears):
@@ -439,48 +434,66 @@ class factor_integration:
     def ntiscont(self, _contBackdata):
         mngIds = _contBackdata['mngIds']
         A_ID   = _contBackdata['A_ID']
-
+        print(_contBackdata)
+        #sleep(10000)
         point  = []
         for i in range(len(mngIds)):
             pt = 0
             temp = 0
             for k in range(len(mngIds[i])):
+                print(mngIds[i][k], A_ID[i])
                 if mngIds[i][k] != None:
-                    if A_ID[i] == mngIds[i][k] :
+                    if A_ID[i][0] == mngIds[i][k] :
                         pt += 10
                     else:
                         temp += 1
             if pt > 0 : 
                 pt += temp
             point.append(pt)
+        print(point)
+        #sleep(10)
         return point
     
     def scocont(self, _contBackdata):
         authors = _contBackdata['authors']
         A_ID = _contBackdata['A_ID']
         aidToDict = {}
-    
-        cnt = 0 
         for i in A_ID:
-            #print(i)
             if type(i) == list:
-                i = i[0]
-         
+                i = i[0]         
             aidToDict[i] = 0
-            cnt += 1
-     
+        for num, i in enumerate(authors):
+            if type(i) != list:
+               # print(i)
+                a = [1]
+                a[0] = i
+                authors[num] = a
+       # print("aidToDict12324531251643", authors)
+        #sleep(5)        
         for i in range(len(authors)):
             for u in range(len(authors[i])):
                 x = authors[i][u].split(';')
+              #  print("xxdqwe12ewafdsgz", x)
+                #sleep(1)
                 for author in enumerate(x):
+                    quest = author[1] in aidToDict
+                 #   print("author1231234", author[1] ,aidToDict, "12324123451365rfqewfzdvzxcb", quest)              
+                   # sleep(10)      
                     if author[1] in aidToDict and author[1] == A_ID[i]:
+                    #    print("author[1]", author[1])
+                       # sleep(1000)
+                        #sleep(10000)
                         if author[0] == 0:
                             aidToDict[author[1]] += 1.0
                         elif author[0] == len(x)-1:
                             aidToDict[author[1]] += 3.0
                         else :
                             aidToDict[author[1]] += ((author[0]+1)/len(x))
+       # print(list(aidToDict.values()))
+       # sleep(10)
         return list(aidToDict.values())
+
+
 
     def ntisquality(self, totalFunds):
         return totalFunds
@@ -516,7 +529,7 @@ class factor_integration:
     
     def acc(self, keywords, contBit, querykey):
         rtv = contBit.copy()
-        print(len(rtv), len(keywords))
+        #print(len(rtv), len(keywords))
         for i in range(len(keywords)):
            # print(rtv, i)
             #try :
@@ -524,7 +537,6 @@ class factor_integration:
             if rtv[i] != 0:
                # print("keywords", keywords[i])
                 temp = calAcc(keywords[i], querykey)
-                print("temp", temp)
                 if temp == 0.0 :
                     rtv[i] = 0.02 
                 else :

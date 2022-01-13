@@ -1,17 +1,18 @@
 
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 import multiprocessing
 import os
 from bson.objectid import ObjectId
 from pymongo import MongoClient
-from new_analyzer_made_by_kjh import run
-
+from new_analyzer import run
+import sys
 def __main__():
-    keyid = 674
-    fid = 0
-    analyzer = run_factor_integration(keyid, fid)
+    f_id = int(sys.argv[1]) #input
+    keyid = int(sys.argv[2])
+    analyzer = run_factor_integration(keyid, f_id)
     
     analyzer.run()
+   # analyzer.factor_norm()
 
 class run_factor_integration:
     def __init__(self, keyid, fid):
@@ -24,7 +25,7 @@ class run_factor_integration:
         self.fid = fid
         
         self.DATA = self.ID['Domestic'].find({"keyId":self.keyid, "fid":0})
-       
+
 
     def count_people(self):
         cnt = 0
@@ -44,42 +45,72 @@ class run_factor_integration:
         if None == self.new_max_factor.find_one({'keyId': self.keyid}):
             self.new_max_factor.insert({'keyId': self.keyid},{'keyId': self.keyid, 'Quality' : -1, 'accuracy' : -1, 'recentness' : -1, 'coop': -1 })
 
-
-        for i in range(0,cnt , 100):
-            start = 1 *i
-            end = 100
-            if i//100 == cnt//100:
-                start = i
-                end = cnt
-            print(end)
-            if __name__ == '__main__':
-                proc = Process(target=run(start, end, self.fid, self.keyid))
+        if __name__ == '__main__':
+            q = Queue()
+            for i in range(0,cnt , 100):
+                start = 1 *i
+                end = 100
+                if i//100 == cnt//100:
+                    start = i
+                    end = cnt
+                print(end)
+                
+                proc = Process(target=run(start, end, self.fid, self.keyid),daemon = False)
+                
                 processList.append(proc)
                 proc.start()
-        for p in processList :
-            p.join()
+
+
+            for p in processList :
+                p.join()
+            
+            self.factor_norm()
         
-        self.factor_norm()
+        
 
 
     def factor_norm(self):
-        max_factor = self.new_max_factor.find_one({'keyId':self.keyid})
-
-        max_qual = max_factor['Quality']
-        max_acc = max_factor['accuracy']
-        max_recentness = max_factor['recentness']
-        max_coop = max_factor['coop']
-        update_list = self.Domestic.find({"keyId":self.keyid})
-        for doc in update_list:
-            if max_qual != 0:
-                norm_qual = doc['factor']['qual']/max_qual
-            else:
-                norm_qual = doc['factor']['qual']
-            score = doc['factor']['qual'] * 25 + doc['factor']['acc'] *25 + doc['factor']['recentness'] * 25 +  doc['factor']['coop'] * 25
-            self.Domestic.update({'_id':ObjectId(doc['_id'])},{"$set":{'score':score ,'factor':{"qual":norm_qual,'coop':doc['factor']['coop'],'recentness':doc['factor']['recentness'],'acc':doc['factor']['acc']}}})
-        print("정규화 끝")
+        max_factor = self.new_max_factor.find({'keyId':self.keyid})
+        for doc1 in max_factor:
+            max_qual = doc1['Quality']
+            max_acc = doc1['accuracy']
+            max_recentness = doc1['recentness']
+            max_coop = doc1['coop']
+            update_list = self.Domestic.find({"keyId":self.keyid, 'fid': self.fid})
+            for doc in update_list:
+                print(doc)
+                if max_qual != 0:
+                    norm_qual = doc['factor']['qual']/max_qual
+                else:
+                    norm_qual = doc['factor']['qual']
+                score = doc['factor']['qual'] * 25 + doc['factor']['acc'] *25 + doc['factor']['recentness'] * 25 +  doc['factor']['coop'] * 25
+                self.Domestic.update({'_id':ObjectId(doc['_id'])},{"$set":{'score':score ,'factor':{"qual":norm_qual,'coop':doc['factor']['coop'],'recentness':doc['factor']['recentness'],'acc':doc['factor']['acc']}}})
+            
 
 __main__()
+# client =  MongoClient('203.255.92.141:27017', connect=False)
+# PUBLIC = client['PUBLIC']
+# new_max_factor = PUBLIC['new_factor'] 
+# ID = client['ID']
+# Domestic = ID['Domestic']
+# max_factor = new_max_factor.find({'keyId':675})
+# for doc1 in max_factor:
+#     max_qual = doc1['Quality']
+#     max_acc = doc1['accuracy']
+#     max_recentness = doc1['recentness']
+#     max_coop = doc1['coop']
+#     update_list = Domestic.find({"keyId":675})
+#     for doc in update_list:
+#        # print(doc)
+#         if max_qual != 0:
+#             norm_qual = doc['factor']['qual']/max_qual
+#         else:
+#             norm_qual = doc['factor']['qual']
+#         score = doc['factor']['qual'] * 25 + doc['factor']['acc'] *25 + doc['factor']['recentness'] * 25 +  doc['factor']['coop'] * 25
+#         Domestic.update({'_id':ObjectId(doc['_id'])},{"$set":{'score':score ,'factor':{"qual":norm_qual,'coop':doc['factor']['coop'],'recentness':doc['factor']['recentness'],'acc':doc['factor']['acc']}}})
+       
+
+
 
 # from multiprocessing import Process
 # import multiprocessing
