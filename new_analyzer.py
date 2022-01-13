@@ -107,7 +107,7 @@ class factor_integration:
 
     def update_domestic(self, id, data, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list):
        # print(id,"실행?!@?#!@#?!@#!@#!@#")
-        self.ID['Domestic'].update_one({'_id':ObjectId(id)},{"$set":{"numProjects":numProjects_list,"numPapers":numPapers_list,"totalcitation":totalcitation_list ,"recentYear":recentYear_list, "totalcoop":totalcoop_list,'factor':data}})
+        self.ID['Domestic'].update_one({'_id':ObjectId(id)},{"$set":{"numProjects":numProjects_list,"numPapers":numPapers_list,"totalCitation":totalcitation_list ,"recentYear":recentYear_list, "totalCoop":totalcoop_list,'factor':data}})
 
     def insert_max_factor(self, qual, accuracy, coop, pYears,keyID):
         qual = max(qual)
@@ -259,14 +259,12 @@ class factor_integration:
                 ntis_id.insert(0,None)
                 totalFunds.insert(0,0)
                 mngIds.insert(0,_mngIds)
-            #sleep(1)
             #SCIENCEON
             if (getBackdata[i]['scienceon'] != None):
                 
                 scienceon_id.insert(0,getBackdata[i]['scienceon'])
 
                 for doc in self.scienceon['Rawdata'].find({"keyId": keyID, "_id": {"$in" : getBackdata[i]['scienceon papers']}}):
-                    #sleep(2)
                     originalName = doc['originalName']
                     originalName1 = originalName.split(';')
                     pcnt = len(originalName1)
@@ -277,10 +275,8 @@ class factor_integration:
                     if cnt == pcnt:
                         totalcoop += 1
                     for j in doc['qryKeyword']:
-                       # print("sci",j)
                         if j not in querykey:
                             querykey.append(j)
-                          #  print("querykey1",querykey) 
                     _keyword1.append(doc['title'])
                     _keyword1.append(doc['english_title'])
                     _keyword1.append(doc['paper_keyword'])
@@ -304,9 +300,7 @@ class factor_integration:
                     authors1.insert(0,_authors1)
                     issueInsts1.insert(0, _issueInsts1)
                     _keywords.insert(0,_keyword1)
-                    #pYears.append(_pYear)
                     issueLangs1.insert(0,_issueLangs1)
-                    #keywords.append(_keywords)
                     citation1.insert(0,_citation1)
             else:
                 issueInsts1.insert(0,_issueInsts1)
@@ -375,7 +369,6 @@ class factor_integration:
             pYears.append(_pYear)
             keywords.append(_keywords)
             try:
-             #   print(getBackdata[i]['number'])
                 qty.append(getBackdata[i]['number'])
             except Exception as e:
                 print(getBackdata)
@@ -468,29 +461,23 @@ class factor_integration:
                 a = [1]
                 a[0] = i
                 authors[num] = a
-       # print("aidToDict12324531251643", authors)
-        #sleep(5)        
+              
         for i in range(len(authors)):
             for u in range(len(authors[i])):
                 x = authors[i][u].split(';')
-              #  print("xxdqwe12ewafdsgz", x)
-                #sleep(1)
+             
                 for author in enumerate(x):
                     quest = author[1] in aidToDict
-                 #   print("author1231234", author[1] ,aidToDict, "12324123451365rfqewfzdvzxcb", quest)              
-                   # sleep(10)      
+                   
                     if author[1] in aidToDict and author[1] == A_ID[i]:
-                    #    print("author[1]", author[1])
-                       # sleep(1000)
-                        #sleep(10000)
+                  
                         if author[0] == 0:
                             aidToDict[author[1]] += 1.0
                         elif author[0] == len(x)-1:
                             aidToDict[author[1]] += 3.0
                         else :
                             aidToDict[author[1]] += ((author[0]+1)/len(x))
-       # print(list(aidToDict.values()))
-       # sleep(10)
+     
         return list(aidToDict.values())
 
 
@@ -529,13 +516,9 @@ class factor_integration:
     
     def acc(self, keywords, contBit, querykey):
         rtv = contBit.copy()
-        #print(len(rtv), len(keywords))
         for i in range(len(keywords)):
-           # print(rtv, i)
-            #try :
-          #  print('rtv',rtv[i])
+           
             if rtv[i] != 0:
-               # print("keywords", keywords[i])
                 temp = calAcc(keywords[i], querykey)
                 if temp == 0.0 :
                     rtv[i] = 0.02 
@@ -612,10 +595,9 @@ def calAcc(keywords, querykey):
     if len(flat_list) == 0 :
         return 0 
 
-    qs = querykey #What is this ?
+    qs = querykey
     qs = [_qs for _qs in qs if len(_qs) >= 2]
     tfidf_vectorizer = TfidfVectorizer(analyzer='word', ngram_range=(1, 1))
-    #print("querykey", querykey)
     tfidf_vectorizer.fit(querykey)
     
     arr = tfidf_vectorizer.transform(flat_list).toarray()
