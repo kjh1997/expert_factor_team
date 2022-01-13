@@ -7,8 +7,8 @@ from pymongo import MongoClient
 from new_analyzer import run
 import sys
 def __main__():
-    f_id = int(sys.argv[1]) #input
-    keyid = int(sys.argv[2])
+    f_id = 0 #input
+    keyid = 675
     analyzer = run_factor_integration(keyid, f_id)
     
     analyzer.run()
@@ -83,7 +83,7 @@ class run_factor_integration:
                     norm_qual = doc['factor']['qual']/max_qual
                 else:
                     norm_qual = doc['factor']['qual']
-                score = doc['factor']['qual'] * 25 + doc['factor']['acc'] *25 + doc['factor']['recentness'] * 25 +  doc['factor']['coop'] * 25
+                score = norm_qual * 25 + doc['factor']['acc'] *25 + doc['factor']['recentness'] * 25 +  doc['factor']['coop'] * 25
                 self.Domestic.update({'_id':ObjectId(doc['_id'])},{"$set":{'score':score ,'factor':{"qual":norm_qual,'coop':doc['factor']['coop'],'recentness':doc['factor']['recentness'],'acc':doc['factor']['acc']}}})
             
 
