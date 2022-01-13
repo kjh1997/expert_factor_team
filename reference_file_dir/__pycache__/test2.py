@@ -1,10 +1,81 @@
-{'mngIds': [[], [], [], [], [], [], [], [], [], [], [], [], ['826267757147'], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], 
-['824113726312'], ['817903867216'], ['s211173'], ['142154128189'], ['415640887101'], ['107195216124'], ['10696300'], ['s243084', '510009005196', '510009005196'], ['417940805159'],
- ['s243085'], ['601196116895'], ['517308165181'], ['MTE3NzQ1NDc='], ['605155818750'], ['662133236693'], ['314855147146'], ['117117077196'], ['104100318255'], ['211845505172'], 
- ['413100235189'], ['s55188'], ['254116016061'], ['12829238'], ['s243083'], ['s243082'], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
-  [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
-   'A_ID': [None, None, None, None, None, None, None, None, None, None, None, None, ['826267757147'], None, None, None, None, None, None, None, None, None, None, None, None, None,
-    None, None, None, None, None, None, ['824113726312'], ['817903867216'], ['s211173'], ['142154128189'], ['415640887101'], ['107195216124'], ['10696300'], ['510009005196', 's243084'],
-     ['417940805159'], ['s243085'], ['601196116895'], ['517308165181'], ['MTE3NzQ1NDc='], ['605155818750'], ['662133236693'], ['314855147146'], ['117117077196'], ['104100318255'],
-      ['211845505172'], ['413100235189'], ['s55188'], ['254116016061'], ['12829238'], ['s243083'], ['s243082'], None, None, None, None, None, None, None, None, None, None, None, None, None, 
-None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]}
+# from locale import currency
+# from tkinter.messagebox import NO
+
+
+# class node:
+#       def __init__(self):
+#             self.prev = None
+#             self.data = None
+#             self.next = None
+      
+#       def insert(self, data):
+#             self.data = data
+
+# class cal:
+#       def __init__(self):
+#             self.head_node = node()
+#             self.tail_node = node()
+#         #    self.node_cnt = 1
+      
+#       def search(self, data, order):
+#             if order == True:
+#                   current_node = self.head_node
+#                   while(True):
+#                         if current_node.data == data:
+#                               break
+
+#                         if self.head_node.next ==None:
+#                               return "값이 존재하지 않습니다."
+                        
+#                         current_node = current_node.next
+
+
+            
+#             else:
+#                   current_node = self.tail_node
+#                   while(True):
+#                         if current_node.data == data:
+#                               break
+
+#                         if self.head_node.prev ==None:
+#                               return "값이 존재하지 않습니다."
+                        
+#                         current_node = current_node.next
+
+
+                  
+                  
+
+#       def insert(self, num, order):
+#             if order == True:
+#                   add_node = node()
+#                   current_node = self.head_node
+#                   for i in range(num):
+#                         if current_node.next == None:
+#                               return "노드가 존재하지 않습니다.."
+#                         current_node = current_node.next
+#                   prev_node = current_node.prev
+#                   next_node = current_node
+#                   add_node.prev = prev_node
+#                   add_node.next = next_node
+#                   prev_node.next = add_node
+#                   next_node.prev = add_node
+#             else:
+#                   for i in range(num):
+#                         current_node = self.tail_node
+#                         if current_node.prev == None:
+#                               return "노드가 존재하지 않습니다.."
+#                         current_node = current_node.prev
+
+def test():
+      a = 20
+      for i in range(1,a,3):
+            if i == 10:
+                  return "??"
+            print(i)
+                  
+      print("나옴?")
+
+
+print(test())
+# print(a)

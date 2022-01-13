@@ -1,3 +1,5 @@
+from email.mime import base
+from pydoc import cli
 import re, math, time, threading, logging, datetime, sys, io, queue
 from typing import List
 import pymongo
@@ -41,13 +43,12 @@ acc : 정확성 // 키워드, contbit
 def run(i, dataPerPage, fid, keyID):
     
     a = factor_integration()
-    print("dataPerPage1231", i, dataPerPage, fid, keyID)
-    data, object_data = a.getBackdata(i, dataPerPage, fid, keyID)
+    data, object_data, base_data = a.getBackdata(i, dataPerPage, fid, keyID)
     (pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata,_KCIconQtyBackdata, _KCIContBackdata, _KCICoopBackdata, qty, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list) = a.getRawBackdata(data,keyID, object_data)
     
     contrib = []
     qual = []
-    
+
     for k in range(len(a.scoquality(_sconQtyBackdata))):
         qual.append(a.ntisquality(_ntisQtyBackdata)[k]+a.scoquality(_sconQtyBackdata)[k]+a.scoquality(_KCIconQtyBackdata)[k])
 
@@ -55,8 +56,6 @@ def run(i, dataPerPage, fid, keyID):
 
     for j in range(len(a.scocont(_sconContBackdata))):
         contrib.append(a.ntiscont(_ntisContBackdata)[j]+a.scocont(_sconContBackdata)[j]+a.scocont(_KCIContBackdata)[j])
-    print(contrib)
-   # sleep(3)
    
     coop = []
     scoop = a.coop(_sconCoopBackdata)
@@ -64,8 +63,11 @@ def run(i, dataPerPage, fid, keyID):
     for x in range(len(_sconCoopBackdata)):
         coop.append(scoop[x] + kcoop[x])
     contBit  = [1 if y > 0 else y for y in contrib]
-    print(contrib)
-    sleep(3)
+    #print(contrib)
+    
+        
+  
+
     accuracy = a.acc(keywords, contBit, querykey)
    # print(len(object_data))
     #print(object_data)
@@ -74,11 +76,22 @@ def run(i, dataPerPage, fid, keyID):
     
     # (qual[i]*25 + accuracy[i]*25 + coop[i]*25 + recentness[i]*25)
     a.insert_max_factor( qual, accuracy, coop, recentness,keyID)
+    # 정규화를  하기 위한 각 factor당 max값을 넣어줌.
    # print(len(qual), len(accuracy), len(coop), len(recentness))
-    for num, i in enumerate(object_data):
+    real_final_last_data = []
+    client = MongoClient('203.255.92.141:27017', connect=False)
+    ID = client['ID']
+    for num, doc in enumerate(ID['Domestic'].find({"keyId":keyID, "fid":fid}).skip(i).limit(dataPerPage)):
+        doc['qual'] = qual[num]
+        doc['acc'] = accuracy[num]
+        doc['coop'] = coop[num]
+        doc['recentness'] = recentness[num]
+        real_final_last_data.append(doc)
+    ID['test'].insert_many(real_final_last_data)
+    # for num, i in enumerate(object_data):
         
-        data = {'qual':qual[num],'acc':accuracy[num], 'coop':coop[num],'recentness':recentness[num]}
-        a.update_domestic(i,data, numProjects_list[num], numPapers_list[num], totalcitation_list[num], recentYear_list[num], totalcoop_list[num])
+    #     data = {'qual':qual[num],'acc':accuracy[num], 'coop':coop[num],'recentness':recentness[num]}
+    #     a.update_domestic(i,data, numProjects_list[num], numPapers_list[num], totalcitation_list[num], recentYear_list[num], totalcoop_list[num])
 
 
 
@@ -116,12 +129,10 @@ class factor_integration:
         recentness = max(pYears)
         keyId = keyID
         maxFactors = {'keyId': self.keyId, 'Quality' : qual, 'accuracy' : accuracy, 'recentness' : recentness, 'coop': coop }
-     
-        self.new_max_factor.update({"keyId" : keyId}, {'$max':{"Quality":qual}})
-        self.new_max_factor.update({"keyId" : keyId}, {'$max':{"accuracy":accuracy}})
-        self.new_max_factor.update({"keyId" : keyId}, {'$max':{"recentness":recentness}})
-        self.new_max_factor.update({"keyId" : keyId}, {'$max':{"coop":coop}})
-       
+
+        self.new_max_factor.update({"keyId" : keyId}, {'$max':{"Quality":qual,"accuracy":accuracy ,"recentness":recentness , "coop":coop }})
+        # 정규화를  하기 위한 각 factor당 max값을 넣어줌.
+        print("실행??")
        
 
     def getBackdata(self, i, dataPerPage, fid, keyID):
@@ -132,8 +143,9 @@ class factor_integration:
         lCoount = int(dataPerPage)
         objectid_data = []   
         getBackdata = []
-        
-        for doc in self.ID['Domestic'].find({"keyId":keyID, "fid":fid}).skip(i).limit(dataPerPage):      
+        base_data = self.ID['Domestic'].find({"keyId":keyID, "fid":fid}).skip(i).limit(dataPerPage)
+        base_data1 = base_data 
+        for doc in base_data:      
             papersNumber = 0
             getBackdataDic = {}
             objectid_data.insert(0,(doc['_id']))
@@ -165,7 +177,7 @@ class factor_integration:
             getBackdataDic['number'] = papersNumber
             getBackdata.append(getBackdataDic)
            
-        return  getBackdata, objectid_data
+        return  getBackdata, objectid_data, base_data1
         
     def getRawBackdata(self, getBackdata, keyID, object_data):
 
@@ -427,14 +439,14 @@ class factor_integration:
     def ntiscont(self, _contBackdata):
         mngIds = _contBackdata['mngIds']
         A_ID   = _contBackdata['A_ID']
-        print(_contBackdata)
+       # print(_contBackdata)
         #sleep(10000)
         point  = []
         for i in range(len(mngIds)):
             pt = 0
             temp = 0
             for k in range(len(mngIds[i])):
-                print(mngIds[i][k], A_ID[i])
+                #print(mngIds[i][k], A_ID[i])
                 if mngIds[i][k] != None:
                     if A_ID[i][0] == mngIds[i][k] :
                         pt += 10
@@ -443,7 +455,7 @@ class factor_integration:
             if pt > 0 : 
                 pt += temp
             point.append(pt)
-        print(point)
+       # print(point)
         #sleep(10)
         return point
     
@@ -577,14 +589,14 @@ class factor_integration:
             univ_query = univName.find_one(eval(univs))
 
             if univ_query is None:
-                print("Search inst None")
+              #  print("Search inst None")
                 return False
             else:
                 return True #univ0, univ_query
             
         except SyntaxError as e:
             print(e)
-            print(univ0)
+           # print(univ0)
             return False
 def calAcc(keywords, querykey):
     flat_list = []
