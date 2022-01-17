@@ -101,22 +101,21 @@ class factor_integration(threading.Thread):
             self.insert_max_factor( qual, accuracy, coop, recentness,self.keyId)
             
             real_final_last_data = []            
-            count_base_data = 0
-            for doc1 in base_data:
+                    
+            for num, doc1 in enumerate(self.ID['Domestic'].find({"keyId":self.keyId, "fid":self.fid}).skip(sCount).limit(lCoount)):
                 
-                doc1['numProjects'] = numProjects_list[count_base_data]
-                doc1['numPapers']    = numPapers_list[count_base_data]
-                doc1['totalCitation']    = totalcitation_list[count_base_data]
-                doc1['recentYear']   = recentYear_list[count_base_data]
-                doc1['totalCoop']    = totalcoop_list[count_base_data]
+                doc1['numProjects'] = numProjects_list[num]
+                doc1['numPapers']    = numPapers_list[num]
+                doc1['totalCitation']    = totalcitation_list[num]
+                doc1['recentYear']   = recentYear_list[num]
+                doc1['totalCoop']    = totalcoop_list[num]
                 doc1['score'] = 0
                 factor = {}
-                factor['qual'] = qual[count_base_data]
-                factor['acc'] = accuracy[count_base_data]
-                factor['coop'] = coop[count_base_data]
-                factor['qunt'] = recentness[count_base_data]
+                factor['qual'] = qual[num]
+                factor['acc'] = accuracy[num]
+                factor['coop'] = coop[num]
+                factor['qunt'] = recentness[num]
                 doc1['factor'] = factor
-                count_base_data += 1
                 real_final_last_data.append(doc1)
                
 
@@ -141,9 +140,8 @@ class factor_integration(threading.Thread):
         objectid_data = []   
         getBackdata = []
         base_data = self.ID['Domestic'].find({"keyId":keyID, "fid":fid}).skip(i).limit(dataPerPage)
-        base_data1 = [] 
-        for doc in base_data: 
-            base_data1.append(doc)
+        base_data1 = base_data 
+        for doc in base_data:      
             papersNumber = 0
             getBackdataDic = {}
             objectid_data.insert(0,(doc['_id']))
@@ -174,6 +172,7 @@ class factor_integration(threading.Thread):
             
             getBackdataDic['number'] = papersNumber
             getBackdata.append(getBackdataDic)
+           
         return  getBackdata, objectid_data, base_data1
         
     def getRawBackdata(self, getBackdata, keyID, object_data):
@@ -361,16 +360,16 @@ class factor_integration(threading.Thread):
                 KCI_id.insert(0,"kci"+str(i))
                 authorInsts2.insert(0,_authorInsts2)
             
-            totalcoop_list.insert(0,totalcoop) #1
+            totalcoop_list.append(totalcoop) #1
             
             
             if recentYear == []:
-                recentYear_list.insert(0,0)
+                recentYear_list.append(0)
             else:
-                recentYear_list.insert(0,max(recentYear)) #2
-            totalcitation_list.insert(0,totalcitation) #3
-            numPapers_list.insert(0,numPapers) #4
-            numProjects_list.insert(0, numProjects) #5
+                recentYear_list.append(max(recentYear)) #2
+            totalcitation_list.append(totalcitation) #3
+            numPapers_list.append(numPapers) #4
+            numProjects_list.append(numProjects) #5
             pYears.append(_pYear)
             keywords.append(_keywords)
             try:
