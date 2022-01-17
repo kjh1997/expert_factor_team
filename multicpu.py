@@ -5,15 +5,15 @@ import os
 from time import sleep
 from bson.objectid import ObjectId
 from pymongo import MongoClient
-from new_analyzer import run
+from new_analyzer import run2
 import sys
-def __main__():
-    f_id = 0 #input
-    keyid = 674
-    analyzer = run_factor_integration(keyid, f_id)
+# def __main__():
+#     f_id = 0 #input
+#     keyid = 672
+#     analyzer = run_factor_integration(keyid, f_id)
     
-    analyzer.run()
-   # analyzer.factor_norm()
+#     analyzer.run()
+#    # analyzer.factor_norm()
 
 class run_factor_integration:
     def __init__(self, keyid, fid):
@@ -43,29 +43,27 @@ class run_factor_integration:
         print("count_people", self.count_people)
         cnt = self.count_people()
         processList = []
-        if None == self.new_max_factor.find_one({'keyId': self.keyid,  "fid":self.fid}):
+        if None == self.new_max_factor.find_one({'keyId': self.keyid}):
             self.new_max_factor.insert({'keyId': self.keyid},{'keyId': self.keyid, 'Quality' : -1, 'accuracy' : -1, 'recentness' : -1, 'coop': -1 })
         
-        if __name__ == '__main__':
-            print("!23123")
-            for i in range(0,cnt , 100):
-                start = 1 *i
-                end = 100
-                if i//100 == cnt//100:
-                    start = i
-                    end = cnt
-                print(end)
-                
-                proc = Process(target=run(start, end, self.fid, self.keyid),daemon = False)
-                
-                processList.append(proc)
-                proc.start()
-
-
-            for p in processList :
-                p.join()
+       
+        for i in range(0,cnt , 100):
+            start = 1 *i
+            end = 100
+            if i//100 == cnt//100:
+                start = i
+                end = cnt
             
-            self.factor_norm()
+            proc = Process(target=run2(start, end, self.fid, self.keyid),daemon = False)
+            
+            processList.append(proc)
+            proc.start()
+
+
+        for p in processList :
+            p.join()
+        
+        self.factor_norm()
         
         
 
@@ -75,8 +73,34 @@ class run_factor_integration:
         print(max_factor)
         max_qual = max_factor['Quality']
         real_qual =1/ max_qual
+        print(real_qual)
+        print(type(real_qual))
         max_acc = max_factor['accuracy']
         max_recentness = max_factor['recentness']
         max_coop = max_factor['coop']
-        self.ID['test'].update_many({'keyId':self.keyid},{"$mul":{'factor':{ 'qual': real_qual }}})
+        print("여기까진 ok")
+        self.ID['test'].update_many({'keyId':self.keyid},{"$mul":{'qual': real_qual }})
+        print("여기까진 ok2222")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 __main__()

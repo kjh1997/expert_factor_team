@@ -40,7 +40,7 @@ coop  : 협업도  // 변화 x
 qual : 품질 // 다른함수 ,x
 acc : 정확성 // 키워드, contbit
 '''
-def run(i, dataPerPage, fid, keyID):
+def run2(i, dataPerPage, fid, keyID):
     
     a = factor_integration()
     data, object_data, base_data = a.getBackdata(i, dataPerPage, fid, keyID)
@@ -130,7 +130,7 @@ class factor_integration:
         keyId = keyID
         maxFactors = {'keyId': self.keyId, 'Quality' : qual, 'accuracy' : accuracy, 'recentness' : recentness, 'coop': coop }
 
-        self.new_max_factor.update({"keyId" : keyId}, {'$max':{"Quality":qual,"accuracy":accuracy ,"recentness":recentness , "coop":coop }})
+        self.new_max_factor.update_one({"keyId" : keyId}, {'$max':{"Quality":qual,"accuracy":accuracy ,"recentness":recentness , "coop":coop }})
         # 정규화를  하기 위한 각 factor당 max값을 넣어줌.
         print("실행??")
        
