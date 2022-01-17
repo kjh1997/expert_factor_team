@@ -5,18 +5,21 @@ import os
 from time import sleep
 from bson.objectid import ObjectId
 from pymongo import MongoClient
-from new_analyzer import run2
+from new_analyzer import factor_integration
 import sys
-# def __main__():
-#     f_id = 0 #input
-#     keyid = 672
-#     analyzer = run_factor_integration(keyid, f_id)
+def __main__():
+    f_id = 0 #input
+    keyid = 674
+    analyzer = run_factor_integration(keyid, f_id)
     
-#     analyzer.run()
-#    # analyzer.factor_norm()
+    analyzer.run()
+   # analyzer.factor_norm()
 
 class run_factor_integration:
     def __init__(self, keyid, fid):
+        self.cores = multiprocessing.cpu_count()
+        if self.cores > 3 :
+            self.cores -= 1
         self.client =  MongoClient('203.255.92.141:27017', connect=False)
         self.PUBLIC = self.client['PUBLIC']
         self.new_max_factor = self.PUBLIC['new_factor'] 
@@ -39,33 +42,45 @@ class run_factor_integration:
     
 
     def run(self):
-     
-        print("count_people", self.count_people)
-        cnt = self.count_people()
+       
+        authorSize = self.ID['Domestic'].find({"keyId":self.keyid, "fid":self.fid}).count()
+        print(authorSize)
         processList = []
         if None == self.new_max_factor.find_one({'keyId': self.keyid}):
             self.new_max_factor.insert({'keyId': self.keyid},{'keyId': self.keyid, 'Quality' : -1, 'accuracy' : -1, 'recentness' : -1, 'coop': -1 })
         
-       
-        for i in range(0,cnt , 100):
-            start = 1 *i
-            end = 100
-            if i//100 == cnt//100:
-                start = i
-                end = cnt
-            
-            proc = Process(target=run2(start, end, self.fid, self.keyid),daemon = False)
-            
-            processList.append(proc)
-            proc.start()
+        th = 100 # each core handle 100 or more data
+        sizeDict = {}
+        perData = int(authorSize / self.cores)
+        if perData > th :
+            last = 0
+            for i in range(self.cores-1) :
+                sizeDict[last] = last+perData
+                last += perData
+            sizeDict[last] = authorSize
+        else :
+            sizeDict[0] = authorSize
+        # 이 코드는 코어수를 기반으로 총 data를 나눠준다. 하지만 총 데이터가 100개 이하이면 나누지 않는다.
+        print(sizeDict)
+        
+        processList = []
+        for key in sizeDict :
+            acl = None
+            acl = factor_integration(key, sizeDict[key], self.fid ,self.keyid)
 
 
+            p = Process(target= acl.run)
+            processList.append(p)
+            p.start()
         for p in processList :
             p.join()
+
+       
         
         self.factor_norm()
         
-        
+
+     
 
 
     def factor_norm(self):
@@ -79,28 +94,8 @@ class run_factor_integration:
         max_recentness = max_factor['recentness']
         max_coop = max_factor['coop']
         print("여기까진 ok")
-        self.ID['test'].update_many({'keyId':self.keyid},{"$mul":{'qual': real_qual }})
+        self.ID['test'].update_many({'keyId':self.keyid, 'fid': self.fid },{"$mul":{'qual': real_qual }})
         print("여기까진 ok2222")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 __main__()

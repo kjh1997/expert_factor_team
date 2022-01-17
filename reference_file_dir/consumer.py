@@ -188,7 +188,7 @@ class Consumer(threading.Thread):
         """ #8-1. normalization """
         maxFactors = ['Quality' , 'Productivity' , 'Contrib' ]
         if self.site != 'NTIS' :
-            maxFactors.append('Coop')
+            maxFactors.append('Coop')gfv 
 
         finMaxEf = self.dbs['ExpertFactorTable'].find_one({"_id" : keyId})
         setOpts = []

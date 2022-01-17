@@ -40,66 +40,60 @@ coop  : 협업도  // 변화 x
 qual : 품질 // 다른함수 ,x
 acc : 정확성 // 키워드, contbit
 '''
-def run2(i, dataPerPage, fid, keyID):
+# def run2(i, dataPerPage, fid, keyID):
     
-    a = factor_integration()
-    data, object_data, base_data = a.getBackdata(i, dataPerPage, fid, keyID)
-    (pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata,_KCIconQtyBackdata, _KCIContBackdata, _KCICoopBackdata, qty, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list) = a.getRawBackdata(data,keyID, object_data)
-    
-    contrib = []
-    qual = []
+#     a = factor_integration()
+#     data, object_data, base_data = a.getBackdata(i, dataPerPage, fid, keyID)
+#     (pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata,_KCIconQtyBackdata, _KCIContBackdata, _KCICoopBackdata, qty, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list) = a.getRawBackdata(data,keyID, object_data)
+#     contrib = []
+#     qual = []
 
-    for k in range(len(a.scoquality(_sconQtyBackdata))):
-        qual.append(a.ntisquality(_ntisQtyBackdata)[k]+a.scoquality(_sconQtyBackdata)[k]+a.scoquality(_KCIconQtyBackdata)[k])
+#     for k in range(len(a.scoquality(_sconQtyBackdata))):
+#         qual.append(a.ntisquality(_ntisQtyBackdata)[k]+a.scoquality(_sconQtyBackdata)[k]+a.scoquality(_KCIconQtyBackdata)[k])
 
+#     for j in range(len(a.scocont(_sconContBackdata))):
+#         contrib.append(a.ntiscont(_ntisContBackdata)[j]+a.scocont(_sconContBackdata)[j]+a.scocont(_KCIContBackdata)[j])   
+#     coop = []
+#     scoop = a.coop(_sconCoopBackdata)
+#     kcoop = a.coop(_KCICoopBackdata)
+#     for x in range(len(_sconCoopBackdata)):
+#         coop.append(scoop[x] + kcoop[x])
+#     contBit  = [1 if y > 0 else y for y in contrib]
+
+#     accuracy = a.acc(keywords, contBit, querykey)
    
-
-    for j in range(len(a.scocont(_sconContBackdata))):
-        contrib.append(a.ntiscont(_ntisContBackdata)[j]+a.scocont(_sconContBackdata)[j]+a.scocont(_KCIContBackdata)[j])
-   
-    coop = []
-    scoop = a.coop(_sconCoopBackdata)
-    kcoop = a.coop(_KCICoopBackdata)
-    for x in range(len(_sconCoopBackdata)):
-        coop.append(scoop[x] + kcoop[x])
-    contBit  = [1 if y > 0 else y for y in contrib]
-    #print(contrib)
+#     recentness = a.recentness(pYears)
     
-        
-  
-
-    accuracy = a.acc(keywords, contBit, querykey)
-   # print(len(object_data))
-    #print(object_data)
-   # sleep(10)
-    recentness = a.recentness(pYears)
+#     self.insert_max_factor( qual, accuracy, coop, recentness,keyID)
     
-    # (qual[i]*25 + accuracy[i]*25 + coop[i]*25 + recentness[i]*25)
-    a.insert_max_factor( qual, accuracy, coop, recentness,keyID)
-    # 정규화를  하기 위한 각 factor당 max값을 넣어줌.
-   # print(len(qual), len(accuracy), len(coop), len(recentness))
-    real_final_last_data = []
-    client = MongoClient('203.255.92.141:27017', connect=False)
-    ID = client['ID']
-    for num, doc in enumerate(ID['Domestic'].find({"keyId":keyID, "fid":fid}).skip(i).limit(dataPerPage)):
-        doc['qual'] = qual[num]
-        doc['acc'] = accuracy[num]
-        doc['coop'] = coop[num]
-        doc['recentness'] = recentness[num]
-        real_final_last_data.append(doc)
-    ID['test'].insert_many(real_final_last_data)
-    # for num, i in enumerate(object_data):
-        
-    #     data = {'qual':qual[num],'acc':accuracy[num], 'coop':coop[num],'recentness':recentness[num]}
-    #     a.update_domestic(i,data, numProjects_list[num], numPapers_list[num], totalcitation_list[num], recentYear_list[num], totalcoop_list[num])
+#     real_final_last_data = []
+#     client = MongoClient('203.255.92.141:27017', connect=False)
+#     ID = client['ID']
+#     for num, doc in enumerate(ID['Domestic'].find({"keyId":keyID, "fid":fid}).skip(i).limit(dataPerPage)):
+#         doc['qual'] = qual[num]
+#         doc['acc'] = accuracy[num]
+#         doc['coop'] = coop[num]
+#         doc['recentness'] = recentness[num]
+#         real_final_last_data.append(doc)
+#     ID['test'].insert_many(real_final_last_data)
 
 
 
 
 
 
-class factor_integration:
-    def __init__(self):
+
+class factor_integration(threading.Thread):
+    # 쓰레드 상속 >> run에서 사용
+    def __init__(self, start, num_data, fid, keyID):
+        threading.Thread.__init__(self)
+        # 받아오는 값
+        self.keyId = keyID
+        self.fid = fid
+        self.start_index = start # 시작위치
+        self.end = num_data # 총 데이터 >> 이걸 100개씩 나눠서 실행시켜야함.
+
+
         self.client = MongoClient('203.255.92.141:27017', connect=False)
         self.ID = self.client['ID']
         self.PUBLIC = self.client['PUBLIC']
@@ -107,7 +101,8 @@ class factor_integration:
         self.ntis_client  = self.client['NTIS']
         self.scienceon = self.client['SCIENCEON']
         self.KCI_main = self.client['KCI']
-        self.keyId = ""
+        
+
         self.KCI = self.client.PUBLIC.KCI
         self.SCI = self.client.PUBLIC.SCI
         self.kDic = {}
@@ -117,10 +112,56 @@ class factor_integration:
         for doc in self.SCI.find({}) :
             self.sDic[doc['name']] = doc['IF']
 
+    def run(self):
+        all_count = self.end - self.start_index
+        dataPerPage = 100
+        allPage = math.ceil(all_count/dataPerPage)
+        for i in range(allPage):
+            sCount  = self.start_index + (i*dataPerPage)
+            lCoount = min(dataPerPage, self.end - sCount )
 
-    def update_domestic(self, id, data, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list):
-       # print(id,"실행?!@?#!@#?!@#!@#!@#")
-        self.ID['Domestic'].update_one({'_id':ObjectId(id)},{"$set":{"numProjects":numProjects_list,"numPapers":numPapers_list,"totalCitation":totalcitation_list ,"recentYear":recentYear_list, "totalCoop":totalcoop_list,'factor':data}})
+            data, object_data, base_data = self.getBackdata(sCount, lCoount, self.fid, self.keyId)
+            (pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata,_KCIconQtyBackdata, _KCIContBackdata, _KCICoopBackdata, qty, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list) = self.getRawBackdata(data,self.keyId, object_data)
+            contrib = []
+            qual = []
+            for k in range(len(self.scoquality(_sconQtyBackdata))):
+                qual.append(self.ntisquality(_ntisQtyBackdata)[k]+self.scoquality(_sconQtyBackdata)[k]+self.scoquality(_KCIconQtyBackdata)[k])
+
+            for j in range(len(self.scocont(_sconContBackdata))):
+                contrib.append(self.ntiscont(_ntisContBackdata)[j]+self.scocont(_sconContBackdata)[j]+self.scocont(_KCIContBackdata)[j])   
+            coop = []
+            scoop = self.coop(_sconCoopBackdata)
+            kcoop = self.coop(_KCICoopBackdata)
+            for x in range(len(_sconCoopBackdata)):
+                coop.append(scoop[x] + kcoop[x])
+            contBit  = [1 if y > 0 else y for y in contrib]
+
+            accuracy = self.acc(keywords, contBit, querykey)
+        
+            recentness = self.recentness(pYears)
+            
+            self.insert_max_factor( qual, accuracy, coop, recentness,self.keyId)
+            
+            real_final_last_data = []
+            
+        
+            for num, doc in enumerate(self.ID['Domestic'].find({"keyId":self.keyId, "fid":self.fid}).skip(sCount).limit(lCoount)):
+                doc['qual'] = qual[num]
+                doc['acc'] = accuracy[num]
+                doc['coop'] = coop[num]
+                doc['recentness'] = recentness[num]
+                real_final_last_data.append(doc)
+            self.ID['test'].insert_many(real_final_last_data)
+
+
+
+
+
+
+
+    # def update_domestic(self, id, data, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list):
+       
+    #     self.ID['Domestic'].update_one({'_id':ObjectId(id)},{"$set":{"numProjects":numProjects_list,"numPapers":numPapers_list,"totalCitation":totalcitation_list ,"recentYear":recentYear_list, "totalCoop":totalcoop_list,'factor':data}})
 
     def insert_max_factor(self, qual, accuracy, coop, pYears,keyID):
         qual = max(qual)
@@ -139,8 +180,6 @@ class factor_integration:
         self.keyID = keyID
         print("RUN!!!",i)
         
-        sCount  = int(i)
-        lCoount = int(dataPerPage)
         objectid_data = []   
         getBackdata = []
         base_data = self.ID['Domestic'].find({"keyId":keyID, "fid":fid}).skip(i).limit(dataPerPage)
