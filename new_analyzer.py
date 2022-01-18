@@ -88,17 +88,19 @@ class factor_integration(threading.Thread):
             for j in range(len(self.scocont(_sconContBackdata))):
                 contrib.append(self.ntiscont(_ntisContBackdata)[j]+self.scocont(_sconContBackdata)[j]+self.scocont(_KCIContBackdata)[j])   
             coop = []
-            scoop = self.coop(_sconCoopBackdata)
-            kcoop = self.coop(_KCICoopBackdata)
-            for x in range(len(_sconCoopBackdata)):
-                coop.append(scoop[x] + kcoop[x])
+
+            # scoop = self.coop(_sconCoopBackdata)
+            # kcoop = self.coop(_KCICoopBackdata)
+            # for x in range(len(_sconCoopBackdata)):
+            #     coop.append(scoop[x] + kcoop[x])
+
             contBit  = [1 if y > 0 else y for y in contrib]
 
             accuracy = self.acc(keywords, contBit, querykey)
         
             recentness = self.recentness(pYears)
             
-            self.insert_max_factor( qual, accuracy, coop, recentness,self.keyId)
+            self.insert_max_factor( qual, accuracy, totalcoop_list, recentness,self.keyId)
             
             real_final_last_data = []            
             count_base_data = 0
@@ -113,7 +115,7 @@ class factor_integration(threading.Thread):
                 factor = {}
                 factor['qual'] = qual[count_base_data]
                 factor['acc'] = accuracy[count_base_data]
-                factor['coop'] = coop[count_base_data]
+                factor['coop'] = totalcoop_list[count_base_data]
                 factor['qunt'] = recentness[count_base_data]
                 doc1['factor'] = factor
                 count_base_data += 1
@@ -272,12 +274,13 @@ class factor_integration(threading.Thread):
                 for doc in self.scienceon['Rawdata'].find({"keyId": keyID, "_id": {"$in" : getBackdata[i]['scienceon papers']}}):
                     originalName = doc['originalName']
                     originalName1 = originalName.split(';')
-                    pcnt = len(originalName1)
+                    
+                    pcnt = len(originalName1)-1
                     cnt = 0
-                    for n in originalName1:
-                        if True == self.check_college(n):
+                    for n in range(pcnt):
+                        if True == self.check_college(originalName1[n]):
                             cnt +=1
-                    if cnt == pcnt:
+                    if cnt != pcnt and cnt >= 1:
                         totalcoop += 1
                     for j in doc['qryKeyword']:
                         if j not in querykey:
@@ -322,12 +325,14 @@ class factor_integration(threading.Thread):
                     numPapers += 1
                     originalName = doc['originalName']
                     originalName2 = originalName.split(';')
-                    pcnt = len(originalName2)
+                   
+                    
+                    pcnt = len(originalName2)-1
                     cnt = 0
-                    for m in originalName2:
-                        if True == self.check_college(m):
+                    for m in range(pcnt):
+                        if True == self.check_college(originalName2[m]):
                             cnt +=1
-                    if cnt == pcnt:
+                    if cnt != pcnt and cnt >= 1:
                         totalcoop += 1
                     
                     _keyword2.append(doc['title'])
