@@ -72,10 +72,10 @@ class run_factor_integration:
         max_recentness = max_factor['recentness']
         max_coop = max_factor['coop']
         real_coop =1/max_coop
-        self.ID['test'].update_many({"keyId":self.keyid, "fid":self.fid}, [{"$set" : {"factor.coop":{"$multiply": ["$factor.coop", real_coop]},"score" : {'$sum':[{"$multiply": ["$factor.qual", real_qual, 25]}, {"$multiply": ["$factor.acc", 25]},{"$multiply": ["$factor.coop", real_coop, 25]},{"$multiply": ["$factor.qunt", 25]}]}}}])
+        self.ID['test'].update_many({"keyId":self.keyid, "fid":self.fid}, [{"$set" : {"score" : {'$sum':[{"$multiply": ["$factor.qual", real_qual, 25]}, {"$multiply": ["$factor.acc", 25]},{"$multiply": ["$factor.coop", real_coop, 25]},{"$multiply": ["$factor.qunt", 25]}]}}}])
         print("종료")
 
-# #[{"$multiply": ["$factor.qual", real_qual, 25]}]
+# #
 #  db.test.updateMany({}, [
 
 # {"$set" : 

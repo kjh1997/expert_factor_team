@@ -79,7 +79,7 @@ class factor_integration(threading.Thread):
             lCoount = min(dataPerPage, self.end - sCount )
             print(sCount, lCoount)
             data, object_data, base_data = self.getBackdata(sCount, lCoount, self.fid, self.keyId)
-            (pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata,_KCIconQtyBackdata, _KCIContBackdata, _KCICoopBackdata, qty, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list, coopList) = self.getRawBackdata(data,self.keyId, object_data)
+            (pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata,_KCIconQtyBackdata, _KCIContBackdata, _KCICoopBackdata, qty, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list) = self.getRawBackdata(data,self.keyId, object_data)
             contrib = []
             qual = []
             for k in range(len(self.scoquality(_sconQtyBackdata))):
@@ -112,7 +112,6 @@ class factor_integration(threading.Thread):
                 doc1['recentYear']   = recentYear_list[count_base_data]
                 doc1['totalCoop']    = totalcoop_list[count_base_data]
                 doc1['score'] = 0
-                doc1['coopList'] = coopList[count_base_data]
                 factor = {}
                 factor['qual'] = qual[count_base_data]
                 factor['acc'] = accuracy[count_base_data]
@@ -206,9 +205,7 @@ class factor_integration(threading.Thread):
         totalcoop_list = []
         numPapers_list = []
         numProjects_list = []
-        coopList = []
         for i in range(len(getBackdata) - 1, -1, -1):
-            coopname = []
             totalcitation = 0
             recentYear = []  
             totalcoop = 0   #공동연구
@@ -282,7 +279,6 @@ class factor_integration(threading.Thread):
                     cnt = 0
                     for n in range(pcnt):
                         if True == self.check_college(originalName1[n]):
-                            coopname.append(originalName1[n])
                             cnt +=1
                     if cnt != pcnt and cnt >= 1:
                         totalcoop += 1
@@ -335,7 +331,6 @@ class factor_integration(threading.Thread):
                     cnt = 0
                     for m in range(pcnt):
                         if True == self.check_college(originalName2[m]):
-                            coopname.append(originalName2[m])
                             cnt +=1
                     if cnt != pcnt and cnt >= 1:
                         totalcoop += 1
@@ -372,11 +367,7 @@ class factor_integration(threading.Thread):
                 authorInsts2.insert(0,_authorInsts2)
             
             totalcoop_list.insert(0,totalcoop) #1
-            coopname = list(set(coopname))
-            for num, i in enumerate(coopname):
-                if coopname[num] == "":
-                    coopname.pop(num)
-            coopList.insert(0, coopname)
+            
             
             if recentYear == []:
                 recentYear_list.insert(0,0)
@@ -392,7 +383,7 @@ class factor_integration(threading.Thread):
             except Exception as e:
                 print(getBackdata)
             
-        return pYears, keywords, totalFunds, {'mngIds' : mngIds, 'A_ID' : ntis_id}, None, {'issueInsts' : issueInsts1, 'issueLangs' : issueLangs1, 'citation' : citation1}, {'authors' : authors1, 'A_ID' : scienceon_id  }, authorInsts1, {'issueInsts' : issueInsts2, 'issueLangs' : issueLangs2, 'citation' : citation2}, {'authors' : authors2, 'A_ID' : KCI_id  }, authorInsts2, qty, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list, coopList
+        return pYears, keywords, totalFunds, {'mngIds' : mngIds, 'A_ID' : ntis_id}, None, {'issueInsts' : issueInsts1, 'issueLangs' : issueLangs1, 'citation' : citation1}, {'authors' : authors1, 'A_ID' : scienceon_id  }, authorInsts1, {'issueInsts' : issueInsts2, 'issueLangs' : issueLangs2, 'citation' : citation2}, {'authors' : authors2, 'A_ID' : KCI_id  }, authorInsts2, qty, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list
     
     def recentness(self, pYears):
         dt = datetime.datetime.now()
