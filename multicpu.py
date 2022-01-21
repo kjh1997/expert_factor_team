@@ -46,7 +46,7 @@ class run_factor_integration:
         else :
             sizeDict[0] = authorSize
         # 이 코드는 코어수를 기반으로 총 data를 나눠준다. 하지만 총 데이터가 100개 이하이면 나누지 않는다.
-        print(sizeDict)
+      #  print(sizeDict)
         
         processList = []
         for key in sizeDict :

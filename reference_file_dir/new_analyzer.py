@@ -77,6 +77,7 @@ class factor_integration(threading.Thread):
             
             sCount  = self.start_index + (i*dataPerPage)
             lCoount = min(dataPerPage, self.end - sCount )
+            print(sCount, lCoount)
             data, object_data, base_data = self.getBackdata(sCount, lCoount, self.fid, self.keyId)
             (pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata,_KCIconQtyBackdata, _KCIContBackdata, _KCICoopBackdata, qty, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list, coopList) = self.getRawBackdata(data,self.keyId, object_data)
             contrib = []
@@ -110,8 +111,8 @@ class factor_integration(threading.Thread):
                 doc1['totalCitation']    = totalcitation_list[count_base_data]
                 doc1['recentYear']   = recentYear_list[count_base_data]
                 doc1['totalCoop']    = totalcoop_list[count_base_data]
-                doc1['score'] = 0
                 doc1['coopList'] = coopList[count_base_data]
+                doc1['score'] = 0
                 factor = {}
                 factor['qual'] = qual[count_base_data]
                 factor['acc'] = accuracy[count_base_data]
@@ -284,7 +285,7 @@ class factor_integration(threading.Thread):
                             cnt += 1
                         else:    
                             coopname.append(originalName1[n])
-                            
+
                     if cnt != pcnt and cnt >= 1:
                         totalcoop += 1
                     for j in doc['qryKeyword']:
@@ -339,7 +340,7 @@ class factor_integration(threading.Thread):
                             cnt += 1    
                         else:   
                             coopname.append(originalName2[m])
-                            
+
                     if cnt != pcnt and cnt >= 1:
                         totalcoop += 1
                     
@@ -376,7 +377,7 @@ class factor_integration(threading.Thread):
             
             totalcoop_list.insert(0,totalcoop) #1
             coopname = list(set(coopname))
-            for num, q in enumerate(coopname):
+            for num, i in enumerate(coopname):
                 if coopname[num] == "":
                     coopname.pop(num)
             coopList.insert(0, coopname)
@@ -390,11 +391,18 @@ class factor_integration(threading.Thread):
             numProjects_list.insert(0, numProjects) #5
             pYears.append(_pYear)
             keywords.append(_keywords)
-            try:
-                qty.append(getBackdata[i]['number'])
-            except Exception as e:
-                print("")
-                #print(getBackdata)
+            print("여기")
+
+            print(i)
+            sleep(5)
+            print(getBackdata[0]['number'])
+            #sleep(10)            
+#try:
+                #print("여기@@@@@@@@@@@@@@@@@@@@")
+                #print(i, getBackdata)
+            qty.append(getBackdata[i]['number'])
+            #except Exception as e:
+             #   print(e)
             
         return pYears, keywords, totalFunds, {'mngIds' : mngIds, 'A_ID' : ntis_id}, None, {'issueInsts' : issueInsts1, 'issueLangs' : issueLangs1, 'citation' : citation1}, {'authors' : authors1, 'A_ID' : scienceon_id  }, authorInsts1, {'issueInsts' : issueInsts2, 'issueLangs' : issueLangs2, 'citation' : citation2}, {'authors' : authors2, 'A_ID' : KCI_id  }, authorInsts2, qty, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list, coopList
     
