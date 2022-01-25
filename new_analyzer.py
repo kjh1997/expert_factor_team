@@ -78,7 +78,7 @@ class factor_integration(threading.Thread):
             sCount  = self.start_index + (i*dataPerPage)
             lCoount = min(dataPerPage, self.end - sCount )
             data, object_data, base_data = self.getBackdata(sCount, lCoount, self.fid, self.keyId)
-            (pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata,_KCIconQtyBackdata, _KCIContBackdata, _KCICoopBackdata, qty, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list, coopList) = self.getRawBackdata(data,self.keyId, object_data)
+            (pYears, keywords, _ntisQtyBackdata, _ntisContBackdata, _ntisCoopBackdata, _sconQtyBackdata, _sconContBackdata, _sconCoopBackdata,_KCIconQtyBackdata, _KCIContBackdata, _KCICoopBackdata, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list, coopList) = self.getRawBackdata(data,self.keyId, object_data)
             contrib = []
             qual = []
             for k in range(len(self.scoquality(_sconQtyBackdata))):
@@ -97,7 +97,7 @@ class factor_integration(threading.Thread):
 
             accuracy = self.acc(keywords, contBit, querykey)
         
-            recentness = self.recentness(pYears)
+            recentness, lct_list = self.recentness(pYears)
             
             self.insert_max_factor( qual, accuracy, totalcoop_list, recentness,self.keyId)
             
@@ -112,11 +112,13 @@ class factor_integration(threading.Thread):
                 doc1['totalCoop']    = totalcoop_list[count_base_data]
                 doc1['score'] = 0
                 doc1['coopList'] = coopList[count_base_data]
+                
                 factor = {}
                 factor['qual'] = qual[count_base_data]
+                factor['lct'] = lct_list[count_base_data] / 2
                 factor['acc'] = accuracy[count_base_data]
                 factor['coop'] = totalcoop_list[count_base_data]
-                factor['qunt'] = recentness[count_base_data]
+                factor['qunt'] = recentness[count_base_data] # 정규화 후 
                 doc1['factor'] = factor
                 count_base_data += 1
                 real_final_last_data.append(doc1)
@@ -388,39 +390,42 @@ class factor_integration(threading.Thread):
             totalcitation_list.insert(0,totalcitation) #3
             numPapers_list.insert(0,numPapers) #4
             numProjects_list.insert(0, numProjects) #5
-            pYears.append(_pYear)
-            keywords.append(_keywords)
-            try:
-                qty.append(getBackdata[i]['number'])
-            except Exception as e:
-                print("")
-                #print(getBackdata)
+            pYears.insert(0,_pYear)
+            keywords.insert(0,_keywords)
             
-        return pYears, keywords, totalFunds, {'mngIds' : mngIds, 'A_ID' : ntis_id}, None, {'issueInsts' : issueInsts1, 'issueLangs' : issueLangs1, 'citation' : citation1}, {'authors' : authors1, 'A_ID' : scienceon_id  }, authorInsts1, {'issueInsts' : issueInsts2, 'issueLangs' : issueLangs2, 'citation' : citation2}, {'authors' : authors2, 'A_ID' : KCI_id  }, authorInsts2, qty, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list, coopList
+            
+        return pYears, keywords, totalFunds, {'mngIds' : mngIds, 'A_ID' : ntis_id}, None, {'issueInsts' : issueInsts1, 'issueLangs' : issueLangs1, 'citation' : citation1}, {'authors' : authors1, 'A_ID' : scienceon_id  }, authorInsts1, {'issueInsts' : issueInsts2, 'issueLangs' : issueLangs2, 'citation' : citation2}, {'authors' : authors2, 'A_ID' : KCI_id  }, authorInsts2, querykey, numProjects_list, numPapers_list, totalcitation_list, recentYear_list, totalcoop_list, coopList
     
     def recentness(self, pYears):
         dt = datetime.datetime.now()
         rct_list = []
+        lct_list = []
         for i in range(len(pYears)):
             rct = 0
+            lct = 0
             try:
                 year_avg = sum(pYears[i]) / len(pYears[i])
+                if year_avg >= int(dt.year)-2: # 최신년도 기준으로 과거 2년까지 +1점
+                    lct = 1
+                elif int(dt.year)-15 < year_avg <= int(dt.year)-3: # 최신년도 기준 과거 15년 ~ 과거 2년까지 
+                    lct = max(round((1-(int(dt.year)-3-year_avg)*0.1),2), 0)
+               
             except Exception as e:
                 rct_list.append(0)
+                lct_list.append(0)
                 continue
+
             for j in range(len(pYears[i])):
                 if (year_avg - 5 < pYears[i][j] < year_avg + 5):
-                    if pYears[i][j] >= int(dt.year)-2: # 최신년도 기준으로 과거 2년까지 +1점
-                        rct += 1
-                    elif int(dt.year)-15 < pYears[i][j] <= int(dt.year)-3: # 최신년도 기준 과거 15년 ~ 과거 2년까지 
-                        rct += max(round((1-(int(dt.year)-3-pYears[i][j])*0.1),2), 0)
-                    else:
-                        rct += 0
+                    rct += 1
+                
             if len(pYears[i]) != 0:
-                rct_list.append(rct / len(pYears[i]))
+                rct_list.append(rct)
+                lct_list.append(lct)
             else:
                 rct_list.append(0)
-        return rct_list
+                lct_list.append(0)
+        return rct_list, lct_list # rct는 정규화를 해야하고,  // lct는 절대적인 값이므로 그냥 더함. 앞에꺼
 
     def career(pYears):
         crr_list = []

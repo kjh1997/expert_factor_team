@@ -288,6 +288,7 @@ class factor_integration(threading.Thread):
 
                     if cnt != pcnt and cnt >= 1:
                         totalcoop += 1
+
                     for j in doc['qryKeyword']:
                         if j not in querykey:
                             querykey.append(j)
@@ -392,6 +393,7 @@ class factor_integration(threading.Thread):
             pYears.append(_pYear)
             keywords.append(_keywords)
             try:
+                
                 qty.append(getBackdata[i]['number'])
             except Exception as e:
                 print(getBackdata)
